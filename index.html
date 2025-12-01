@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Plant Watering Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 1.4rem;
+        }
+
+        .card-title i {
+            color: #667eea;
+        }
+
+        .moisture-level {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .percentage {
+            font-size: 4rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            padding: 10px 25px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-need-water {
+            background-color: #ff6b6b;
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        .status-ok {
+            background-color: #51cf66;
+            color: white;
+        }
+
+        .status-too-wet {
+            background-color: #339af0;
+            color: white;
+        }
+
+        .gauge-container {
+            height: 150px;
+            margin: 20px 0;
+        }
+
+        .history-chart {
+            height: 200px;
+            margin-top: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .device-info {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .device-id {
+            font-family: monospace;
+            background: #f1f3f5;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+
+        .last-update {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        .refresh-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .refresh-btn:hover {
+            background: #5a67d8;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+            padding: 20px;
+            opacity: 0.8;
+        }
+
+        /* Excel-like Table Styles */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .excel-style-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            font-size: 0.95rem;
+        }
+
+        .excel-style-table th {
+            background: #f8f9fa;
+            color: #495057;
+            padding: 15px 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+            white-space: nowrap;
+        }
+
+        .excel-style-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: middle;
+        }
+
+        .excel-style-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .excel-style-table tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+
+        .excel-style-table tr:nth-child(even):hover {
+            background-color: #f1f3f5;
+        }
+
+        .plant-name {
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .plant-icon {
+            width: 32px;
+            height: 32px;
+            background: #e3f2fd;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1971c2;
+        }
+
+        .temp-cell {
+            font-family: monospace;
+            font-weight: 600;
+        }
+
+        .moisture-percent {
+            font-family: monospace;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .moisture-range-cell {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .action-cell {
+            font-size: 0.9rem;
+            color: #495057;
+        }
+
+        .last-watered {
+            font-size: 0.85rem;
+            color: #868e96;
+        }
+
+        .table-summary {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+
+        .summary-item {
+            text-align: center;
+        }
+
+        .summary-label {
+            display: block;
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .summary-value {
+            display: block;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .status-label {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .table-container {
+                font-size: 0.9rem;
+            }
+            
+            .excel-style-table th,
+            .excel-style-table td {
+                padding: 10px 8px;
+            }
+            
+            .table-summary {
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+            
+            .summary-item {
+                flex: 1 0 40%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .summary-value {
+                font-size: 1.5rem;
+            }
+            
+            .excel-style-table {
+                font-size: 0.85rem;
+            }
+            
+            .plant-name {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-seedling"></i> Smart Plant Watering Dashboard</h1>
+            <p>Real-time monitoring system for all your plants' health</p>
+        </div>
+
+        <div class="dashboard">
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-tint"></i> Current Plant Status</h2>
+                <div class="moisture-level">
+                    <div class="percentage" id="moisturePercent">--%</div>
+                    <div class="status-indicator" id="statusIndicator">
+                        LOADING...
+                    </div>
+                </div>
+                <div class="gauge-container">
+                    <canvas id="moistureGauge"></canvas>
+                </div>
+                
+                <div class="last-update">
+                    Last updated: <span id="lastUpdate">--</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-thermometer-half"></i> Environment</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="temperature">--°C</div>
+                        <div class="stat-label">Temperature</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="humidity">--%</div>
+                        <div class="stat-label">Humidity</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="rawValue">--</div>
+                        <div class="stat-label">Raw Sensor Value</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="updateCount">0</div>
+                        <div class="stat-label">Updates Received</div>
+                    </div>
+                </div>
+                
+                <div class="device-info">
+                    <p>Device ID: <span class="device-id" id="deviceId">------</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Plant Status Table -->
+        <div class="card">
+            <h2 class="card-title"><i class="fas fa-table"></i> Plant Status Overview</h2>
+            
+            <div class="table-container">
+                <table class="excel-style-table">
+                    <thead>
+                        <tr>
+                            <th>Plant Name</th>
+                            <th><i class="fas fa-thermometer-half"></i> Temp</th>
+                            <th><i class="fas fa-tint"></i> Moisture %</th>
+                            <th><i class="fas fa-chart-line"></i> Range</th>
+                            <th>Status</th>
+                            <th>Action Required</th>
+                            <th>Last Watered</th>
+                        </tr>
+                    </thead>
+                    <tbody id="plantTableBody">
+                        <!-- Data will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="table-summary">
+                <div class="summary-item">
+                    <span class="summary-label">Total Plants:</span>
+                    <span class="summary-value" id="totalPlants">5</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Need Water:</span>
+                    <span class="summary-value status-need-water" id="needsWater">2</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">OK Status:</span>
+                    <span class="summary-value status-ok" id="okStatus">2</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Too Wet:</span>
+                    <span class="summary-value status-too-wet" id="tooWet">1</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Chart -->
+        <div class="card">
+            <h2 class="card-title"><i class="fas fa-chart-line"></i> Moisture History</h2>
+            <div class="history-chart">
+                <canvas id="historyChart"></canvas>
+            </div>
+        </div>
+
+        <button class="refresh-btn" onclick="fetchData()">
+            <i class="fas fa-sync-alt"></i> Refresh All Data
+        </button>
+
+        <div class="footer">
+            <p>Smart Plant Watering Dashboard System | IoT Project | ESP32 & Firebase</p>
+            <p>Status indicators: 
+                <span class="status-indicator status-need-water" style="margin: 0 5px; padding: 5px 10px;">NEED WATER (0-30%)</span>
+                <span class="status-indicator status-ok" style="margin: 0 5px; padding: 5px 10px;">OK (31-70%)</span>
+                <span class="status-indicator status-too-wet" style="margin: 0 5px; padding: 5px 10px;">TOO WET (71-100%)</span>
+            </p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>
