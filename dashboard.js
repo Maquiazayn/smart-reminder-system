@@ -1,4 +1,4 @@
-// dashboard.js - Single Plant Monitoring Dashboard with Multiple Time Ranges
+// dashboard.js - Fixed for Arduino Firebase integration
 const FIREBASE_CONFIG = {
     apiKey: "AIzaSyAi17Nr_DVUflPmsMzpx8pptqcZxT2AfUQ",
     authDomain: "smart-plant-watering-rem-e050a.firebaseapp.com",
@@ -11,23 +11,13 @@ const FIREBASE_CONFIG = {
 };
 
 // Global variables
-let currentDeviceId = null;
+let currentDeviceId = 'PLANT-001'; // Default device ID
 let updateCount = 0;
 let currentTimeRange = 'minutes';
 let historyChartInstance = null;
 
-// Data storage for different time ranges
-let minuteData = [];
-let hourData = [];
-let dayData = [];
-
-// Constants
-const MINUTES_IN_HOUR = 60;
-const HOURS_IN_DAY = 24;
-const DAYS_IN_WEEK = 7;
-
-// Sample records data
-let plantRecords = [];
+// Chart instances
+let moistureGauge = null;
 
 // DOM Elements
 const elements = {
@@ -55,15 +45,14 @@ const elements = {
     chartInfoText: document.getElementById('chartInfoText')
 };
 
-// Chart instances
-let moistureGauge = null;
+// Store recent readings
+let recentReadings = [];
 
 // Initialize dashboard when page loads
 document.addEventListener('DOMContentLoaded', initDashboard);
 
-// Main initialization function
 function initDashboard() {
-    console.log("Single Plant Monitoring Dashboard initializing...");
+    console.log("Plant Monitoring Dashboard initializing...");
     
     // Initialize gauge chart
     initializeGauge();
@@ -73,180 +62,24 @@ function initDashboard() {
     
     // Get device ID from URL or localStorage
     const urlParams = new URLSearchParams(window.location.search);
-    currentDeviceId = urlParams.get('device') || localStorage.getItem('plantDeviceId') || 'PLANT-SENSOR-001';
+    currentDeviceId = urlParams.get('device') || localStorage.getItem('plantDeviceId') || 'PLANT-001';
     
     // Set device ID in UI
     elements.deviceId.textContent = currentDeviceId;
     localStorage.setItem('plantDeviceId', currentDeviceId);
     
-    // Generate initial data for all time ranges
-    generateInitialData();
-    
-    // Initialize records table with data
-    updateRecordsTable();
-    
-    // Update history chart with initial data
-    updateHistoryChart();
-    
     // Start fetching data
     fetchData();
     
-    // Set up auto-refresh every 60 seconds (1 minute)
-    setInterval(fetchData, 60000);
+    // Set up auto-refresh every 5 seconds (matching Arduino)
+    setInterval(fetchData, 5000);
     
-    // Update data every minute
-    setInterval(updateData, 60000);
+    // Update chart every minute
+    setInterval(updateChartData, 60000);
     
-    console.log("Dashboard initialized for single plant monitoring");
+    console.log("Dashboard initialized for plant monitoring");
 }
 
-// Generate initial data for all time ranges
-function generateInitialData() {
-    const now = new Date();
-    
-    // Generate minute data (last 60 minutes)
-    minuteData = [];
-    for (let i = MINUTES_IN_HOUR - 1; i >= 0; i--) {
-        const timestamp = new Date(now.getTime() - i * 60000);
-        const moisture = generateRealisticMoisture(i, 'minute');
-        
-        minuteData.push({
-            timestamp: timestamp,
-            moisture: moisture,
-            temperature: 22 + Math.sin(i * 0.05) * 2 + (Math.random() * 1 - 0.5),
-            humidity: 45 + Math.sin(i * 0.08) * 8 + (Math.random() * 2 - 1)
-        });
-    }
-    
-    // Generate hour data (last 24 hours)
-    hourData = [];
-    for (let i = HOURS_IN_DAY - 1; i >= 0; i--) {
-        const timestamp = new Date(now.getTime() - i * 60 * 60000);
-        const moisture = generateRealisticMoisture(i, 'hour');
-        
-        hourData.push({
-            timestamp: timestamp,
-            moisture: moisture,
-            temperature: 22 + Math.sin(i * 0.2) * 3,
-            humidity: 45 + Math.sin(i * 0.3) * 10
-        });
-    }
-    
-    // Generate day data (last 7 days)
-    dayData = [];
-    for (let i = DAYS_IN_WEEK - 1; i >= 0; i--) {
-        const timestamp = new Date(now.getTime() - i * 24 * 60 * 60000);
-        const moisture = generateRealisticMoisture(i, 'day');
-        
-        dayData.push({
-            timestamp: timestamp,
-            moisture: moisture,
-            temperature: 22 + Math.sin(i * 0.5) * 4,
-            humidity: 45 + Math.sin(i * 0.7) * 15
-        });
-    }
-    
-    // Generate sample records (last 50 readings)
-    plantRecords = [];
-    for (let i = 0; i < 50; i++) {
-        const hoursAgo = i * 0.5; // Every 30 minutes for 25 hours
-        const timestamp = new Date(now.getTime() - hoursAgo * 60 * 60000);
-        const moisture = generateRealisticMoisture(i, 'record');
-        
-        let status;
-        if (moisture <= 30) status = "NEED WATER";
-        else if (moisture <= 70) status = "OK";
-        else status = "TOO WET";
-        
-        plantRecords.push({
-            timestamp: timestamp.toLocaleString(),
-            moistureLevel: moisture,
-            temperature: 22 + Math.sin(i * 0.3) * 3 + (Math.random() * 2 - 1),
-            humidity: 45 + Math.sin(i * 0.4) * 10 + (Math.random() * 5 - 2.5),
-            status: status
-        });
-    }
-}
-
-// Generate realistic moisture data
-function generateRealisticMoisture(index, type) {
-    let baseMoisture, variation;
-    
-    switch(type) {
-        case 'minute':
-            baseMoisture = 50 + Math.sin(index * 0.1) * 20;
-            variation = Math.random() * 3 - 1.5;
-            break;
-        case 'hour':
-            baseMoisture = 50 + Math.sin(index * 0.3) * 20;
-            variation = Math.random() * 5 - 2.5;
-            break;
-        case 'day':
-            baseMoisture = 50 + Math.sin(index * 0.8) * 25;
-            variation = Math.random() * 10 - 5;
-            break;
-        case 'record':
-            baseMoisture = 45 + Math.sin(index * 0.5) * 25;
-            variation = Math.random() * 10 - 5;
-            break;
-        default:
-            baseMoisture = 50;
-            variation = 0;
-    }
-    
-    return Math.max(0, Math.min(100, baseMoisture + variation));
-}
-
-// Update the records table with plant data
-function updateRecordsTable() {
-    const tableBody = elements.recordsTableBody;
-    tableBody.innerHTML = '';
-    
-    // Sort records by timestamp (newest first)
-    const sortedRecords = [...plantRecords].sort((a, b) => {
-        return new Date(b.timestamp) - new Date(a.timestamp);
-    });
-    
-    // Populate table rows (show only latest 20)
-    const recordsToShow = sortedRecords.slice(0, 20);
-    
-    recordsToShow.forEach(record => {
-        const row = document.createElement('tr');
-        
-        // Determine status badge class and color for moisture level
-        let statusClass = '';
-        let moistureColorClass = '';
-        
-        if (record.status === "NEED WATER") {
-            statusClass = 'status-need-water-badge';
-            moistureColorClass = 'moisture-low';
-        } else if (record.status === "OK") {
-            statusClass = 'status-ok-badge';
-            moistureColorClass = 'moisture-ok';
-        } else {
-            statusClass = 'status-too-wet-badge';
-            moistureColorClass = 'moisture-high';
-        }
-        
-        // Create row HTML
-        row.innerHTML = `
-            <td class="timestamp-col">${record.timestamp}</td>
-            <td class="percent-col ${moistureColorClass}">${record.moistureLevel.toFixed(1)}%</td>
-            <td class="value-col">${record.temperature.toFixed(1)}°C</td>
-            <td class="percent-col">${record.humidity.toFixed(1)}%</td>
-            <td class="status-col">
-                <span class="status-badge ${statusClass}">${record.status}</span>
-            </td>
-        `;
-        
-        tableBody.appendChild(row);
-    });
-    
-    // Update record count
-    elements.recordCount.textContent = recordsToShow.length;
-}
-
-// Initialize the moisture gauge chart
 function initializeGauge() {
     const ctx = document.getElementById('moistureGauge').getContext('2d');
     
@@ -278,7 +111,6 @@ function initializeGauge() {
     });
 }
 
-// Initialize the history line chart
 function initializeHistoryChart() {
     const ctx = document.getElementById('historyChart').getContext('2d');
     
@@ -286,22 +118,20 @@ function initializeHistoryChart() {
         type: 'line',
         data: {
             labels: [],
-            datasets: [
-                {
-                    label: 'Soil Moisture (%)',
-                    data: [],
-                    borderColor: '#3498db',
-                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 3,
-                    pointRadius: 3,
-                    pointBackgroundColor: '#3498db',
-                    pointBorderColor: '#ffffff',
-                    pointBorderWidth: 1,
-                    pointHoverRadius: 6
-                }
-            ]
+            datasets: [{
+                label: 'Soil Moisture (%)',
+                data: [],
+                borderColor: '#3498db',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                fill: true,
+                tension: 0.4,
+                borderWidth: 3,
+                pointRadius: 3,
+                pointBackgroundColor: '#3498db',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 1,
+                pointHoverRadius: 6
+            }]
         },
         options: {
             responsive: true,
@@ -333,33 +163,6 @@ function initializeHistoryChart() {
                     callbacks: {
                         label: function(context) {
                             return `Moisture: ${context.parsed.y.toFixed(1)}%`;
-                        },
-                        title: function(context) {
-                            const data = getCurrentData();
-                            if (data[context[0].dataIndex]) {
-                                const timestamp = data[context[0].dataIndex].timestamp;
-                                
-                                switch(currentTimeRange) {
-                                    case 'minutes':
-                                        return timestamp.toLocaleTimeString([], { 
-                                            hour: '2-digit', 
-                                            minute: '2-digit',
-                                            second: '2-digit'
-                                        });
-                                    case 'hours':
-                                        return timestamp.toLocaleTimeString([], { 
-                                            hour: '2-digit', 
-                                            minute: '2-digit'
-                                        });
-                                    case 'days':
-                                        return timestamp.toLocaleDateString('en-US', { 
-                                            weekday: 'short',
-                                            month: 'short',
-                                            day: 'numeric'
-                                        });
-                                }
-                            }
-                            return '';
                         }
                     }
                 }
@@ -402,39 +205,7 @@ function initializeHistoryChart() {
                             weight: '600'
                         },
                         color: '#7f8c8d',
-                        maxRotation: 45,
-                        callback: function(value, index) {
-                            const data = getCurrentData();
-                            if (data[index]) {
-                                const timestamp = data[index].timestamp;
-                                
-                                switch(currentTimeRange) {
-                                    case 'minutes':
-                                        // Show every 10th minute
-                                        if (index % 10 === 0) {
-                                            return timestamp.toLocaleTimeString([], { 
-                                                hour: '2-digit', 
-                                                minute: '2-digit'
-                                            });
-                                        }
-                                        return '';
-                                    case 'hours':
-                                        // Show every 4th hour
-                                        if (index % 4 === 0) {
-                                            return timestamp.toLocaleTimeString([], { 
-                                                hour: '2-digit'
-                                            });
-                                        }
-                                        return '';
-                                    case 'days':
-                                        // Show all days
-                                        return timestamp.toLocaleDateString('en-US', { 
-                                            weekday: 'short'
-                                        });
-                                }
-                            }
-                            return '';
-                        }
+                        maxRotation: 45
                     },
                     title: {
                         display: true,
@@ -446,96 +217,34 @@ function initializeHistoryChart() {
                         }
                     }
                 }
-            },
-            interaction: {
-                intersect: false,
-                mode: 'index'
-            },
-            elements: {
-                line: {
-                    tension: 0.4
-                }
             }
         }
     });
 }
 
-// Get current data based on selected time range
-function getCurrentData() {
-    switch(currentTimeRange) {
-        case 'minutes': return minuteData;
-        case 'hours': return hourData;
-        case 'days': return dayData;
-        default: return minuteData;
-    }
-}
-
-// Update history chart with data
-function updateHistoryChart() {
-    if (!historyChartInstance) return;
+function updateChartData() {
+    if (!historyChartInstance || recentReadings.length === 0) return;
     
-    const data = getCurrentData();
+    // Get last 30 readings for the chart
+    const last30Readings = recentReadings.slice(-30);
+    const labels = last30Readings.map(r => 
+        new Date(r.timestamp).toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        })
+    );
+    const data = last30Readings.map(r => r.moisture);
     
-    // Prepare labels and data
-    let labels = [];
-    let moistureData = [];
-    
-    data.forEach(item => {
-        let label;
-        switch(currentTimeRange) {
-            case 'minutes':
-                label = item.timestamp.toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit'
-                });
-                break;
-            case 'hours':
-                label = item.timestamp.toLocaleTimeString([], { 
-                    hour: '2-digit'
-                });
-                break;
-            case 'days':
-                label = item.timestamp.toLocaleDateString('en-US', { 
-                    weekday: 'short'
-                });
-                break;
-        }
-        
-        labels.push(label);
-        moistureData.push(item.moisture);
-    });
-    
-    // Update chart data
     historyChartInstance.data.labels = labels;
-    historyChartInstance.data.datasets[0].data = moistureData;
-    
-    // Update chart title
-    switch(currentTimeRange) {
-        case 'minutes':
-            historyChartInstance.options.scales.x.title.text = 'Last 60 Minutes';
-            elements.timeRangeValue.textContent = 'Last 60 Minutes';
-            elements.chartInfoText.textContent = 'for the last 60 minutes (updated every minute)';
-            break;
-        case 'hours':
-            historyChartInstance.options.scales.x.title.text = 'Last 24 Hours';
-            elements.timeRangeValue.textContent = 'Last 24 Hours';
-            elements.chartInfoText.textContent = 'for the last 24 hours (hourly averages)';
-            break;
-        case 'days':
-            historyChartInstance.options.scales.x.title.text = 'Last 7 Days';
-            elements.timeRangeValue.textContent = 'Last 7 Days';
-            elements.chartInfoText.textContent = 'for the last 7 days (daily averages)';
-            break;
-    }
+    historyChartInstance.data.datasets[0].data = data;
     
     // Calculate statistics
-    if (moistureData.length > 0) {
-        const current = moistureData[moistureData.length - 1];
-        const average = moistureData.reduce((a, b) => a + b, 0) / moistureData.length;
-        const max = Math.max(...moistureData);
-        const min = Math.min(...moistureData);
+    if (data.length > 0) {
+        const current = data[data.length - 1];
+        const average = data.reduce((a, b) => a + b, 0) / data.length;
+        const max = Math.max(...data);
+        const min = Math.min(...data);
         
-        // Update statistics display
         elements.currentStat.textContent = `${current.toFixed(1)}%`;
         elements.averageStat.textContent = `${average.toFixed(1)}%`;
         elements.maxStat.textContent = `${max.toFixed(1)}%`;
@@ -545,107 +254,15 @@ function updateHistoryChart() {
     historyChartInstance.update();
 }
 
-// Update data every minute
-function updateData() {
-    const now = new Date();
-    
-    // Update minute data (add new minute)
-    const newMinuteMoisture = generateRealisticMoisture(minuteData.length, 'minute');
-    minuteData.push({
-        timestamp: now,
-        moisture: newMinuteMoisture,
-        temperature: 22 + Math.sin(minuteData.length * 0.05) * 2,
-        humidity: 45 + Math.sin(minuteData.length * 0.08) * 8
-    });
-    
-    // Keep only last 60 minutes
-    if (minuteData.length > MINUTES_IN_HOUR) {
-        minuteData.shift();
-    }
-    
-    // Update hour data (calculate hourly average if needed)
-    const currentHour = now.getHours();
-    const lastHourData = hourData[hourData.length - 1];
-    
-    if (lastHourData && lastHourData.timestamp.getHours() === currentHour) {
-        // Update current hour average
-        const hourMinutes = minuteData.filter(m => m.timestamp.getHours() === currentHour);
-        if (hourMinutes.length > 0) {
-            const avgMoisture = hourMinutes.reduce((sum, m) => sum + m.moisture, 0) / hourMinutes.length;
-            lastHourData.moisture = avgMoisture;
-            lastHourData.timestamp = now;
-        }
-    } else {
-        // Add new hour
-        const newHourMoisture = generateRealisticMoisture(hourData.length, 'hour');
-        hourData.push({
-            timestamp: now,
-            moisture: newHourMoisture,
-            temperature: 22 + Math.sin(hourData.length * 0.2) * 3,
-            humidity: 45 + Math.sin(hourData.length * 0.3) * 10
-        });
-        
-        // Keep only last 24 hours
-        if (hourData.length > HOURS_IN_DAY) {
-            hourData.shift();
-        }
-    }
-    
-    // Update day data (calculate daily average if needed)
-    const currentDay = now.getDate();
-    const lastDayData = dayData[dayData.length - 1];
-    
-    if (lastDayData && lastDayData.timestamp.getDate() === currentDay) {
-        // Update current day average
-        const dayHours = hourData.filter(h => h.timestamp.getDate() === currentDay);
-        if (dayHours.length > 0) {
-            const avgMoisture = dayHours.reduce((sum, h) => sum + h.moisture, 0) / dayHours.length;
-            lastDayData.moisture = avgMoisture;
-            lastDayData.timestamp = now;
-        }
-    } else {
-        // Add new day
-        const newDayMoisture = generateRealisticMoisture(dayData.length, 'day');
-        dayData.push({
-            timestamp: now,
-            moisture: newDayMoisture,
-            temperature: 22 + Math.sin(dayData.length * 0.5) * 4,
-            humidity: 45 + Math.sin(dayData.length * 0.7) * 15
-        });
-        
-        // Keep only last 7 days
-        if (dayData.length > DAYS_IN_WEEK) {
-            dayData.shift();
-        }
-    }
-    
-    // Update chart if on current time range
-    updateHistoryChart();
-}
-
-// Change time range
-function changeTimeRange(range) {
-    // Update active tab
-    document.querySelectorAll('.chart-tab').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    event.target.classList.add('active');
-    
-    // Update time range
-    currentTimeRange = range;
-    updateHistoryChart();
-}
-
-// Update the moisture gauge with new value
 function updateGauge(percentage) {
     if (moistureGauge) {
         moistureGauge.data.datasets[0].data = [percentage, 100 - percentage];
         
         // Set color based on moisture level
         let color;
-        if (percentage <= 30) {
+        if (percentage <= 20) {
             color = '#e74c3c';
-        } else if (percentage <= 70) {
+        } else if (percentage <= 75) {
             color = '#2ecc71';
         } else {
             color = '#3498db';
@@ -656,29 +273,26 @@ function updateGauge(percentage) {
     }
 }
 
-// Determine status class based on moisture percentage
 function getStatusClass(percentage) {
-    if (percentage <= 30) return 'status-need-water';
-    if (percentage <= 70) return 'status-ok';
+    if (percentage <= 20) return 'status-need-water';
+    if (percentage <= 75) return 'status-ok';
     return 'status-too-wet';
 }
 
-// Determine status text based on moisture percentage
 function getStatusText(percentage) {
-    if (percentage <= 30) return 'NEED WATER';
-    if (percentage <= 70) return 'OK';
+    if (percentage <= 20) return 'NEED WATER';
+    if (percentage <= 75) return 'OK';
     return 'TOO WET';
 }
 
-// Update warning banner based on moisture level
 function updateWarningBanner(percentage) {
     const warningBanner = elements.warningBanner;
     
-    if (percentage <= 30) {
+    if (percentage <= 20) {
         warningBanner.style.display = 'block';
         warningBanner.innerHTML = '<i class="fas fa-exclamation-circle"></i> WARNING: Plant needs water immediately!';
         warningBanner.style.background = '#e74c3c';
-    } else if (percentage >= 71) {
+    } else if (percentage >= 90) {
         warningBanner.style.display = 'block';
         warningBanner.innerHTML = '<i class="fas fa-exclamation-circle"></i> ALERT: Soil is too wet!';
         warningBanner.style.background = '#3498db';
@@ -687,74 +301,76 @@ function updateWarningBanner(percentage) {
     }
 }
 
-// Add new record to history
-function addNewRecord(data) {
+function addToRecentReadings(data) {
     const now = new Date();
-    const percentage = data.moisture_percent || 0;
-    const status = getStatusText(percentage);
-    
-    const newRecord = {
-        timestamp: now.toLocaleString(),
-        moistureLevel: percentage,
+    const reading = {
+        timestamp: now.getTime(),
+        moisture: data.moisture || 0,
         temperature: data.temperature || 0,
         humidity: data.humidity || 0,
-        status: status
+        status: getStatusText(data.moisture || 0)
     };
     
-    // Add new record to beginning of array
-    plantRecords.unshift(newRecord);
+    recentReadings.push(reading);
     
-    // Keep only last 50 records
-    if (plantRecords.length > 50) {
-        plantRecords.pop();
+    // Keep only last 100 readings
+    if (recentReadings.length > 100) {
+        recentReadings.shift();
     }
     
-    // Update the table
+    // Update records table
     updateRecordsTable();
-    
-    // Update minute data
-    minuteData.push({
-        timestamp: now,
-        moisture: percentage,
-        temperature: data.temperature || 0,
-        humidity: data.humidity || 0
-    });
-    
-    // Keep only last 60 minutes
-    if (minuteData.length > MINUTES_IN_HOUR) {
-        minuteData.shift();
-    }
-    
-    // Update hour data
-    const currentHour = now.getHours();
-    const lastHourData = hourData[hourData.length - 1];
-    
-    if (lastHourData && lastHourData.timestamp.getHours() === currentHour) {
-        // Recalculate hour average
-        const hourMinutes = minuteData.filter(m => m.timestamp.getHours() === currentHour);
-        if (hourMinutes.length > 0) {
-            const avgMoisture = hourMinutes.reduce((sum, m) => sum + m.moisture, 0) / hourMinutes.length;
-            lastHourData.moisture = avgMoisture;
-            lastHourData.timestamp = now;
-        }
-    }
-    
-    // Update day data
-    const currentDay = now.getDate();
-    const lastDayData = dayData[dayData.length - 1];
-    
-    if (lastDayData && lastDayData.timestamp.getDate() === currentDay) {
-        // Recalculate day average
-        const dayHours = hourData.filter(h => h.timestamp.getDate() === currentDay);
-        if (dayHours.length > 0) {
-            const avgMoisture = dayHours.reduce((sum, h) => sum + h.moisture, 0) / dayHours.length;
-            lastDayData.moisture = avgMoisture;
-            lastDayData.timestamp = now;
-        }
-    }
 }
 
-// Update all UI elements with sensor data
+function updateRecordsTable() {
+    const tableBody = elements.recordsTableBody;
+    
+    // Clear table
+    tableBody.innerHTML = '';
+    
+    // Show last 10 readings (newest first)
+    const last10Readings = [...recentReadings].reverse().slice(0, 10);
+    
+    last10Readings.forEach(reading => {
+        const row = document.createElement('tr');
+        const date = new Date(reading.timestamp);
+        
+        // Determine status badge class
+        let statusClass = '';
+        let moistureColorClass = '';
+        
+        if (reading.moisture <= 20) {
+            statusClass = 'status-need-water-badge';
+            moistureColorClass = 'moisture-low';
+        } else if (reading.moisture <= 75) {
+            statusClass = 'status-ok-badge';
+            moistureColorClass = 'moisture-ok';
+        } else {
+            statusClass = 'status-too-wet-badge';
+            moistureColorClass = 'moisture-high';
+        }
+        
+        row.innerHTML = `
+            <td class="timestamp-col">${date.toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit' 
+            })}</td>
+            <td class="percent-col ${moistureColorClass}">${reading.moisture.toFixed(1)}%</td>
+            <td class="value-col">${reading.temperature.toFixed(1)}°C</td>
+            <td class="percent-col">${reading.humidity.toFixed(1)}%</td>
+            <td class="status-col">
+                <span class="status-badge ${statusClass}">${reading.status}</span>
+            </td>
+        `;
+        
+        tableBody.appendChild(row);
+    });
+    
+    // Update record count
+    elements.recordCount.textContent = recentReadings.length;
+}
+
 function updateUI(data) {
     console.log("Updating UI with data:", data);
     
@@ -763,23 +379,25 @@ function updateUI(data) {
         return;
     }
     
-    const percentage = data.moisture_percent || 0;
-    const rawValue = data.moisture_value || 0;
-    const statusClass = getStatusClass(percentage);
-    const statusText = getStatusText(percentage);
+    const moisture = data.moisture || 0;
+    const rawValue = data.rawValue || 0;
+    const temperature = data.temperature || 0;
+    const humidity = data.humidity || 0;
+    const statusClass = getStatusClass(moisture);
+    const statusText = getStatusText(moisture);
     
-    // Update main display elements
-    elements.moisturePercent.textContent = `${percentage.toFixed(1)}`;
-    elements.percentageLarge.textContent = `${percentage.toFixed(1)}%`;
+    // Update main display
+    elements.moisturePercent.textContent = moisture.toFixed(1);
+    elements.percentageLarge.textContent = `${moisture.toFixed(1)}%`;
     elements.plantStatusText.textContent = statusText;
     elements.plantStatusText.className = `plant-status-text ${statusClass}`;
     
     // Update warning banner
-    updateWarningBanner(percentage);
+    updateWarningBanner(moisture);
     
     // Update environment data
-    elements.temperature.textContent = data.temperature ? `${data.temperature.toFixed(1)}` : '--';
-    elements.humidity.textContent = data.humidity ? `${data.humidity.toFixed(1)}` : '--';
+    elements.temperature.textContent = temperature.toFixed(1);
+    elements.humidity.textContent = humidity.toFixed(1);
     elements.rawValue.textContent = rawValue;
     
     // Update counters
@@ -796,42 +414,33 @@ function updateUI(data) {
     });
     
     // Update device ID if available
-    if (data.device_id && data.device_id !== currentDeviceId) {
-        currentDeviceId = data.device_id;
+    if (data.deviceId && data.deviceId !== currentDeviceId) {
+        currentDeviceId = data.deviceId;
         elements.deviceId.textContent = currentDeviceId;
         localStorage.setItem('plantDeviceId', currentDeviceId);
-        console.log("Updated device ID to:", currentDeviceId);
     }
     
-    // Update plant info if available
-    if (data.plant_name) {
-        elements.plantName.textContent = data.plant_name;
-    }
-    if (data.plant_type) {
-        elements.plantType.textContent = data.plant_type;
-    }
-    if (data.plant_location) {
-        elements.plantLocation.textContent = data.plant_location;
-    }
-    
-    // Add to history
-    addNewRecord(data);
+    // Add to recent readings
+    addToRecentReadings({
+        moisture: moisture,
+        temperature: temperature,
+        humidity: humidity
+    });
     
     // Update gauge
-    updateGauge(percentage);
+    updateGauge(moisture);
     
-    // Update history chart with new data point
-    updateHistoryChart();
+    // Update chart
+    updateChartData();
     
     console.log("UI updated successfully");
 }
 
-// Fetch data from Firebase
 async function fetchData() {
     console.log(`Fetching data for device: ${currentDeviceId}`);
     
     try {
-        const url = `${FIREBASE_CONFIG.databaseURL}/plants/${currentDeviceId}/latest.json`;
+        const url = `${FIREBASE_CONFIG.databaseURL}/plants/${currentDeviceId}.json`;
         
         const response = await fetch(url);
         
@@ -840,7 +449,7 @@ async function fetchData() {
         }
         
         const data = await response.json();
-        console.log("Received data:", data);
+        console.log("Received data from Firebase:", data);
         
         if (data === null) {
             console.warn("No data found at this path");
@@ -865,24 +474,19 @@ async function fetchData() {
     }
 }
 
-// Show demo data when real data is not available
 function showDemoData() {
     console.log("Showing demo data");
     
-    const rawValue = Math.floor(Math.random() * 4096);
-    const percentage = 40 + Math.random() * 30;
+    const moisture = 40 + Math.random() * 30;
     
     const demoData = {
-        device_id: currentDeviceId,
-        moisture_value: rawValue,
-        moisture_percent: percentage,
+        deviceId: currentDeviceId,
+        moisture: moisture,
+        rawValue: Math.floor(Math.random() * 4096),
         temperature: 22 + Math.random() * 5,
         humidity: 40 + Math.random() * 30,
-        timestamp: Date.now(),
-        status: 'OK',
-        plant_name: 'My Indoor Plant',
-        plant_type: 'Snake Plant',
-        plant_location: 'Living Room • Window Side'
+        moistureStatus: 'OK',
+        needsWater: false
     };
     
     updateUI(demoData);
@@ -893,14 +497,38 @@ function showDemoData() {
     elements.refreshStatus.textContent = 'Demo Mode';
 }
 
-// Refresh all data
+function changeTimeRange(range) {
+    // Update active tab
+    document.querySelectorAll('.chart-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Update time range
+    currentTimeRange = range;
+    
+    switch(range) {
+        case 'minutes':
+            elements.timeRangeValue.textContent = 'Last 30 Minutes';
+            elements.chartInfoText.textContent = 'for the last 30 minutes (real-time data)';
+            break;
+        case 'hours':
+            elements.timeRangeValue.textContent = 'Last 24 Hours';
+            elements.chartInfoText.textContent = 'for the last 24 hours (hourly averages)';
+            break;
+        case 'days':
+            elements.timeRangeValue.textContent = 'Last 7 Days';
+            elements.chartInfoText.textContent = 'for the last 7 days (daily averages)';
+            break;
+    }
+}
+
 function refreshData() {
     console.log("Refreshing all data...");
     fetchData();
     showNotification("Plant data refreshed successfully");
 }
 
-// Show notification
 function showNotification(message) {
     // Create notification element
     const notification = document.createElement('div');
