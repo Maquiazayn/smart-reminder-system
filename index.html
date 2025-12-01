@@ -67,7 +67,7 @@
             display: grid;
             grid-template-columns: 1fr 2fr;
             gap: 25px;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
 
         .card {
@@ -240,8 +240,15 @@
         }
 
         /* History Chart Container */
-        .history-chart-container {
-            margin-top: 20px;
+        .history-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        .chart-card {
+            margin-bottom: 0;
         }
 
         .chart-container {
@@ -250,67 +257,99 @@
             position: relative;
         }
 
-        .chart-actions {
+        .chart-tabs {
             display: flex;
             justify-content: center;
-            gap: 10px;
+            gap: 5px;
             margin-top: 15px;
             flex-wrap: wrap;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 10px;
         }
 
-        .chart-btn {
-            padding: 8px 15px;
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
+        .chart-tab {
+            padding: 10px 20px;
+            background: #e9ecef;
+            border: none;
             border-radius: 5px;
-            font-size: 0.9rem;
-            font-weight: 500;
+            font-size: 0.95rem;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
+            color: #495057;
         }
 
-        .chart-btn:hover {
-            background: #e9ecef;
+        .chart-tab:hover {
+            background: #dee2e6;
         }
 
-        .chart-btn.active {
+        .chart-tab.active {
             background: #3498db;
             color: white;
-            border-color: #2980b9;
+            box-shadow: 0 3px 10px rgba(52, 152, 219, 0.3);
         }
 
         .chart-info {
             color: #7f8c8d;
             font-size: 0.9rem;
-            margin-top: 10px;
+            margin-top: 15px;
             text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
         }
 
-        .data-point-info {
-            display: flex;
-            justify-content: space-around;
+        .chart-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
             margin-top: 20px;
-            padding: 15px;
+        }
+
+        .chart-stat {
             background: #f8f9fa;
+            padding: 15px;
             border-radius: 10px;
+            text-align: center;
             border: 1px solid #e9ecef;
         }
 
-        .data-point {
-            text-align: center;
-        }
-
-        .data-point-value {
-            font-size: 1.5rem;
+        .stat-value {
+            font-size: 1.8rem;
             font-weight: 700;
             color: #2c3e50;
             font-family: 'Courier New', monospace;
         }
 
-        .data-point-label {
-            font-size: 0.9rem;
+        .stat-label {
+            font-size: 0.85rem;
             color: #7f8c8d;
             margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .time-range-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding: 10px 15px;
+            background: #e8f4fc;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+
+        .time-range-label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .time-range-value {
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            color: #3498db;
         }
 
         .records-container {
@@ -536,7 +575,7 @@
 
         .refresh-btn-container {
             text-align: center;
-            margin-top: 30px;
+            margin: 30px 0;
         }
 
         .refresh-btn {
@@ -608,6 +647,10 @@
             .percentage-large {
                 font-size: 4rem;
             }
+            
+            .chart-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
         @media (max-width: 768px) {
@@ -649,9 +692,8 @@
                 height: 300px;
             }
             
-            .data-point-info {
-                flex-direction: column;
-                gap: 15px;
+            .chart-stats {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -686,6 +728,15 @@
             .refresh-btn {
                 padding: 12px 25px;
                 font-size: 1rem;
+            }
+            
+            .chart-tabs {
+                flex-direction: column;
+            }
+            
+            .chart-tab {
+                width: 100%;
+                text-align: center;
             }
         }
     </style>
@@ -764,43 +815,52 @@
             </div>
 
             <!-- History Chart Card -->
-            <div class="card">
+            <div class="card chart-card">
                 <div class="table-header">
                     <h2 class="records-title"><i class="fas fa-chart-line"></i> SOIL MOISTURE HISTORY</h2>
-                    <div class="table-actions">
-                        <div class="chart-actions">
-                            <button class="chart-btn active" onclick="changeChartView('minutes')">Last 60 Min</button>
-                            <button class="chart-btn" onclick="changeChartView('hours')">Last 24 Hours</button>
-                            <button class="chart-btn" onclick="changeChartView('days')">Last 7 Days</button>
-                        </div>
-                    </div>
                 </div>
                 
-                <div class="history-chart-container">
-                    <div class="chart-container">
-                        <canvas id="historyChart"></canvas>
+                <div class="chart-tabs">
+                    <button class="chart-tab active" onclick="changeTimeRange('minutes')">
+                        <i class="fas fa-clock"></i> PER MINUTE (60 min)
+                    </button>
+                    <button class="chart-tab" onclick="changeTimeRange('hours')">
+                        <i class="fas fa-history"></i> PER HOUR (24 hours)
+                    </button>
+                    <button class="chart-tab" onclick="changeTimeRange('days')">
+                        <i class="fas fa-calendar-alt"></i> PER DAY (7 days)
+                    </button>
+                </div>
+                
+                <div class="time-range-info">
+                    <div class="time-range-label">Currently viewing:</div>
+                    <div class="time-range-value" id="timeRangeValue">Last 60 Minutes</div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="historyChart"></canvas>
+                </div>
+                
+                <div class="chart-info">
+                    Showing soil moisture levels <span id="chartInfoText">for the last 60 minutes</span>
+                </div>
+                
+                <div class="chart-stats">
+                    <div class="chart-stat">
+                        <div class="stat-value" id="currentStat">--%</div>
+                        <div class="stat-label">Current</div>
                     </div>
-                    <div class="chart-info">
-                        Showing soil moisture levels updated every minute
+                    <div class="chart-stat">
+                        <div class="stat-value" id="averageStat">--%</div>
+                        <div class="stat-label">Average</div>
                     </div>
-                    
-                    <div class="data-point-info">
-                        <div class="data-point">
-                            <div class="data-point-value" id="currentMoisture">--%</div>
-                            <div class="data-point-label">Current</div>
-                        </div>
-                        <div class="data-point">
-                            <div class="data-point-value" id="averageMoisture">--%</div>
-                            <div class="data-point-label">Average</div>
-                        </div>
-                        <div class="data-point">
-                            <div class="data-point-value" id="maxMoisture">--%</div>
-                            <div class="data-point-label">Maximum</div>
-                        </div>
-                        <div class="data-point">
-                            <div class="data-point-value" id="minMoisture">--%</div>
-                            <div class="data-point-label">Minimum</div>
-                        </div>
+                    <div class="chart-stat">
+                        <div class="stat-value" id="maxStat">--%</div>
+                        <div class="stat-label">Maximum</div>
+                    </div>
+                    <div class="chart-stat">
+                        <div class="stat-value" id="minStat">--%</div>
+                        <div class="stat-label">Minimum</div>
                     </div>
                 </div>
             </div>
@@ -809,7 +869,7 @@
         <!-- Recent Records Card -->
         <div class="card">
             <div class="table-header">
-                <h2 class="records-title"><i class="fas fa-history"></i> RECENT READINGS (LAST 24 HOURS)</h2>
+                <h2 class="records-title"><i class="fas fa-history"></i> RECENT READINGS</h2>
                 <div class="table-actions">
                     <button class="action-btn" onclick="refreshData()">
                         <i class="fas fa-sync-alt"></i> Refresh Table
@@ -834,7 +894,7 @@
                 </table>
                 
                 <div class="data-count">
-                    Showing <span id="recordCount">0</span> readings from the last 24 hours
+                    Showing <span id="recordCount">0</span> recent readings
                 </div>
             </div>
         </div>
@@ -861,7 +921,7 @@
                 <span class="status-indicator status-too-wet">TOO WET (71-100%)</span>
             </p>
             <p style="margin-top: 20px; opacity: 0.7; font-size: 0.9rem;">
-                Monitoring one plant • Updated every minute • Simple & Effective
+                Monitoring one plant • Updated every minute • Complete History Tracking
             </p>
         </div>
     </div>
