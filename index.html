@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Plant Watering Dashboard</title>
+    <title>Single Plant Watering Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -52,9 +52,20 @@
             color: #ecf0f1;
         }
 
+        .plant-name {
+            font-size: 1.5rem;
+            color: #3498db;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 25px;
+            border-radius: 50px;
+            display: inline-block;
+            margin-top: 15px;
+            font-weight: 600;
+        }
+
         .main-dashboard {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 2fr;
             gap: 25px;
             margin-bottom: 30px;
         }
@@ -230,7 +241,7 @@
 
         /* History Chart Container */
         .history-chart-container {
-            margin-top: 30px;
+            margin-top: 20px;
         }
 
         .chart-container {
@@ -471,7 +482,7 @@
             color: #7f8c8d;
             font-size: 1.1rem;
             margin-top: 20px;
-            text-align: right;
+            text-align: center;
             font-weight: 600;
             padding: 10px 15px;
             background: #f8f9fa;
@@ -483,6 +494,7 @@
             padding-top: 20px;
             border-top: 2px solid rgba(255, 255, 255, 0.1);
             color: white;
+            text-align: center;
         }
 
         .device-id {
@@ -493,6 +505,13 @@
             border-radius: 5px;
             font-size: 1rem;
             font-weight: 600;
+            display: inline-block;
+        }
+
+        .update-info {
+            margin-top: 15px;
+            opacity: 0.9;
+            font-size: 0.9rem;
         }
 
         .footer {
@@ -541,6 +560,34 @@
             background: #2980b9;
             transform: translateY(-3px);
             box-shadow: 0 10px 25px rgba(52, 152, 219, 0.4);
+        }
+
+        .plant-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .plant-icon {
+            font-size: 3rem;
+            color: #2ecc71;
+        }
+
+        .plant-details {
+            text-align: left;
+        }
+
+        .plant-type {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .plant-location {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
         }
 
         @keyframes pulse {
@@ -646,19 +693,30 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1><i class="fas fa-seedling"></i> SMART PLANT WATERING DASHBOARD</h1>
-            <p>Real-Time Soil Moisture Monitoring & Smart Watering Reminder System</p>
+            <h1><i class="fas fa-seedling"></i> SINGLE PLANT MONITORING DASHBOARD</h1>
+            <p>Real-Time Soil Moisture Monitoring for Your Plant</p>
+            <div class="plant-name" id="plantName">My Indoor Plant</div>
         </div>
 
         <!-- Main Dashboard Grid -->
         <div class="main-dashboard">
             <!-- Current Plant Status Card -->
             <div class="card plant-status-card">
-                <h2 class="card-title"><i class="fas fa-exclamation-triangle"></i> PLANT HEALTH STATUS</h2>
+                <h2 class="card-title"><i class="fas fa-exclamation-triangle"></i> CURRENT PLANT STATUS</h2>
                 
                 <!-- Dynamic Warning Banner -->
                 <div class="warning-banner" id="warningBanner" style="display: none;">
                     <i class="fas fa-exclamation-circle"></i> WARNING: Plant needs water!
+                </div>
+                
+                <div class="plant-info">
+                    <div class="plant-icon">
+                        <i class="fas fa-leaf"></i>
+                    </div>
+                    <div class="plant-details">
+                        <div class="plant-type" id="plantType">Snake Plant</div>
+                        <div class="plant-location" id="plantLocation">Living Room • Window Side</div>
+                    </div>
                 </div>
                 
                 <div class="status-grid">
@@ -675,7 +733,7 @@
                         <div class="status-value" id="humidity">--<span class="status-unit">%</span></div>
                     </div>
                     <div class="status-item">
-                        <div class="status-label">Raw Sensor Value</div>
+                        <div class="status-label">Sensor Value</div>
                         <div class="status-value" id="rawValue">--</div>
                     </div>
                 </div>
@@ -688,7 +746,7 @@
                 </div>
                 
                 <div class="last-update-large">
-                    Last updated: <span class="timestamp" id="lastUpdate">--:--:--</span>
+                    Last reading: <span class="timestamp" id="lastUpdate">--:--:--</span>
                 </div>
                 
                 <div class="gauge-container">
@@ -697,85 +755,86 @@
                 </div>
                 
                 <div class="device-info">
-                    <p>Device ID: <span class="device-id" id="deviceId">------</span></p>
-                    <p style="margin-top: 10px; opacity: 0.9; font-size: 0.9rem;">
-                        <i class="fas fa-info-circle"></i> Updates received: <span id="updateCount">0</span>
+                    <p>Device ID: <span class="device-id" id="deviceId">PLANT-SENSOR-001</span></p>
+                    <p class="update-info">
+                        <i class="fas fa-sync-alt"></i> Updates received: <span id="updateCount">0</span> • 
+                        Auto-refresh: <span id="refreshStatus">Every minute</span>
                     </p>
                 </div>
             </div>
 
-            <!-- Recent Records Card -->
+            <!-- History Chart Card -->
             <div class="card">
                 <div class="table-header">
-                    <h2 class="records-title"><i class="fas fa-history"></i> RECENT MONITORING RECORDS</h2>
+                    <h2 class="records-title"><i class="fas fa-chart-line"></i> SOIL MOISTURE HISTORY</h2>
                     <div class="table-actions">
-                        <button class="action-btn" onclick="refreshData()">
-                            <i class="fas fa-sync-alt"></i> Refresh
-                        </button>
+                        <div class="chart-actions">
+                            <button class="chart-btn active" onclick="changeChartView('minutes')">Last 60 Min</button>
+                            <button class="chart-btn" onclick="changeChartView('hours')">Last 24 Hours</button>
+                            <button class="chart-btn" onclick="changeChartView('days')">Last 7 Days</button>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="records-container">
-                    <table class="records-table">
-                        <thead>
-                            <tr>
-                                <th>Timestamp</th>
-                                <th>Moisture Level (%)</th>
-                                <th>Temperature (°C)</th>
-                                <th>Humidity (%)</th>
-                                <th>Plant Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="recordsTableBody">
-                            <!-- Records will be populated by JavaScript -->
-                        </tbody>
-                    </table>
+                <div class="history-chart-container">
+                    <div class="chart-container">
+                        <canvas id="historyChart"></canvas>
+                    </div>
+                    <div class="chart-info">
+                        Showing soil moisture levels updated every minute
+                    </div>
                     
-                    <div class="data-count">
-                        Showing <span id="recordCount">0</span> recent plant monitoring records
+                    <div class="data-point-info">
+                        <div class="data-point">
+                            <div class="data-point-value" id="currentMoisture">--%</div>
+                            <div class="data-point-label">Current</div>
+                        </div>
+                        <div class="data-point">
+                            <div class="data-point-value" id="averageMoisture">--%</div>
+                            <div class="data-point-label">Average</div>
+                        </div>
+                        <div class="data-point">
+                            <div class="data-point-value" id="maxMoisture">--%</div>
+                            <div class="data-point-label">Maximum</div>
+                        </div>
+                        <div class="data-point">
+                            <div class="data-point-value" id="minMoisture">--%</div>
+                            <div class="data-point-label">Minimum</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- History Chart Card -->
+        <!-- Recent Records Card -->
         <div class="card">
             <div class="table-header">
-                <h2 class="records-title"><i class="fas fa-chart-line"></i> SOIL MOISTURE HISTORY (LAST 60 MINUTES)</h2>
+                <h2 class="records-title"><i class="fas fa-history"></i> RECENT READINGS (LAST 24 HOURS)</h2>
                 <div class="table-actions">
-                    <div class="chart-actions">
-                        <button class="chart-btn active" onclick="changeChartView('minutes')">Per Minute</button>
-                        <button class="chart-btn" onclick="changeChartView('average')">5-Min Average</button>
-                        <button class="chart-btn" onclick="changeChartView('trend')">Trend Line</button>
-                    </div>
+                    <button class="action-btn" onclick="refreshData()">
+                        <i class="fas fa-sync-alt"></i> Refresh Table
+                    </button>
                 </div>
             </div>
             
-            <div class="history-chart-container">
-                <div class="chart-container">
-                    <canvas id="historyChart"></canvas>
-                </div>
-                <div class="chart-info">
-                    Showing soil moisture levels for the last 60 minutes (updated every minute)
-                </div>
+            <div class="records-container">
+                <table class="records-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Moisture Level (%)</th>
+                            <th>Temperature (°C)</th>
+                            <th>Humidity (%)</th>
+                            <th>Plant Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsTableBody">
+                        <!-- Records will be populated by JavaScript -->
+                    </tbody>
+                </table>
                 
-                <div class="data-point-info">
-                    <div class="data-point">
-                        <div class="data-point-value" id="currentMoisture">--%</div>
-                        <div class="data-point-label">Current</div>
-                    </div>
-                    <div class="data-point">
-                        <div class="data-point-value" id="averageMoisture">--%</div>
-                        <div class="data-point-label">60-min Average</div>
-                    </div>
-                    <div class="data-point">
-                        <div class="data-point-value" id="maxMoisture">--%</div>
-                        <div class="data-point-label">Max (60 min)</div>
-                    </div>
-                    <div class="data-point">
-                        <div class="data-point-value" id="minMoisture">--%</div>
-                        <div class="data-point-label">Min (60 min)</div>
-                    </div>
+                <div class="data-count">
+                    Showing <span id="recordCount">0</span> readings from the last 24 hours
                 </div>
             </div>
         </div>
@@ -790,10 +849,10 @@
         <!-- Footer -->
         <div class="footer">
             <p style="font-size: 1.2rem; margin-bottom: 15px; font-weight: 600;">
-                <i class="fas fa-leaf"></i> Smart Plant Watering Reminder System
+                <i class="fas fa-leaf"></i> Single Plant Watering System
             </p>
             <p style="margin-bottom: 20px; opacity: 0.9;">
-                IoT Project | ESP32 & Firebase | Real-Time Soil Moisture Monitoring
+                Real-Time Soil Moisture Monitoring • Automatic Watering Reminder
             </p>
             <p>
                 Status Indicators: 
@@ -802,7 +861,7 @@
                 <span class="status-indicator status-too-wet">TOO WET (71-100%)</span>
             </p>
             <p style="margin-top: 20px; opacity: 0.7; font-size: 0.9rem;">
-                Low-Cost & Energy-Efficient Design | Portable & Easy to Install
+                Monitoring one plant • Updated every minute • Simple & Effective
             </p>
         </div>
     </div>
