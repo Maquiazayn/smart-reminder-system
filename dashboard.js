@@ -1,4 +1,4 @@
-// dashboard.js - Fixed for Arduino Firebase integration
+// dashboard.js - Enhanced with real-time updates and better UI
 const FIREBASE_CONFIG = {
     apiKey: "AIzaSyAi17Nr_DVUflPmsMzpx8pptqcZxT2AfUQ",
     authDomain: "smart-plant-watering-rem-e050a.firebaseapp.com",
@@ -11,13 +11,16 @@ const FIREBASE_CONFIG = {
 };
 
 // Global variables
-let currentDeviceId = 'PLANT-001'; // Default device ID
+let currentDeviceId = 'PLANT-001';
 let updateCount = 0;
 let currentTimeRange = 'minutes';
 let historyChartInstance = null;
-
-// Chart instances
 let moistureGauge = null;
+let connectionStatus = true;
+
+// Store readings for history
+let recentReadings = [];
+let allReadings = [];
 
 // DOM Elements
 const elements = {
@@ -45,39 +48,52 @@ const elements = {
     chartInfoText: document.getElementById('chartInfoText')
 };
 
-// Store recent readings
-let recentReadings = [];
-
-// Initialize dashboard when page loads
+// Initialize dashboard
 document.addEventListener('DOMContentLoaded', initDashboard);
 
 function initDashboard() {
-    console.log("Plant Monitoring Dashboard initializing...");
+    console.log("🚀 Smart Plant Dashboard Initializing...");
     
-    // Initialize gauge chart
     initializeGauge();
-    
-    // Initialize history chart
     initializeHistoryChart();
     
-    // Get device ID from URL or localStorage
+    // Get device ID
     const urlParams = new URLSearchParams(window.location.search);
     currentDeviceId = urlParams.get('device') || localStorage.getItem('plantDeviceId') || 'PLANT-001';
-    
-    // Set device ID in UI
     elements.deviceId.textContent = currentDeviceId;
     localStorage.setItem('plantDeviceId', currentDeviceId);
     
-    // Start fetching data
-    fetchData();
+    // Initialize with sample data
+    initializeSampleData();
+    updateRecordsTable();
+    updateHistoryChart();
     
-    // Set up auto-refresh every 5 seconds (matching Arduino)
+    // Start real-time updates
+    startRealtimeUpdates();
+    
+    // Auto-refresh every 5 seconds
     setInterval(fetchData, 5000);
     
-    // Update chart every minute
-    setInterval(updateChartData, 60000);
+    // Animate elements
+    animateUIElements();
     
-    console.log("Dashboard initialized for plant monitoring");
+    console.log("✅ Dashboard Initialized Successfully!");
+}
+
+function initializeSampleData() {
+    // Generate 30 minutes of sample data
+    const now = new Date();
+    for (let i = 29; i >= 0; i--) {
+        const time = new Date(now.getTime() - i * 60000);
+        const moisture = 45 + Math.sin(i * 0.3) * 20 + Math.random() * 10 - 5;
+        
+        recentReadings.push({
+            timestamp: time.getTime(),
+            moisture: Math.max(0, Math.min(100, moisture)),
+            temperature: 22 + Math.sin(i * 0.1) * 3,
+            humidity: 50 + Math.sin(i * 0.2) * 15
+        });
+    }
 }
 
 function initializeGauge() {
@@ -88,15 +104,17 @@ function initializeGauge() {
         data: {
             datasets: [{
                 data: [50, 50],
-                backgroundColor: ['#3498db', 'rgba(255, 255, 255, 0.2)'],
+                backgroundColor: ['#2ecc71', 'rgba(255, 255, 255, 0.2)'],
                 borderWidth: 0,
                 circumference: 180,
                 rotation: 270,
-                borderRadius: 10
+                borderRadius: 15,
+                borderWidth: 3,
+                borderColor: 'rgba(255, 255, 255, 0.3)'
             }]
         },
         options: {
-            cutout: '85%',
+            cutout: '80%',
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
@@ -104,8 +122,8 @@ function initializeGauge() {
                 tooltip: { enabled: false }
             },
             animation: {
-                animateRotate: true,
-                animateScale: true
+                duration: 1000,
+                easing: 'easeOutQuart'
             }
         }
     });
@@ -114,23 +132,31 @@ function initializeGauge() {
 function initializeHistoryChart() {
     const ctx = document.getElementById('historyChart').getContext('2d');
     
+    // Gradient for chart
+    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(52, 152, 219, 0.3)');
+    gradient.addColorStop(1, 'rgba(52, 152, 219, 0.05)');
+    
     historyChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: [],
+            labels: recentReadings.map(r => 
+                new Date(r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            ),
             datasets: [{
                 label: 'Soil Moisture (%)',
-                data: [],
+                data: recentReadings.map(r => r.moisture),
                 borderColor: '#3498db',
-                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                backgroundColor: gradient,
                 fill: true,
                 tension: 0.4,
-                borderWidth: 3,
-                pointRadius: 3,
+                borderWidth: 4,
+                pointRadius: 4,
                 pointBackgroundColor: '#3498db',
                 pointBorderColor: '#ffffff',
-                pointBorderWidth: 1,
-                pointHoverRadius: 6
+                pointBorderWidth: 2,
+                pointHoverRadius: 8,
+                pointHoverBackgroundColor: '#2ecc71'
             }]
         },
         options: {
@@ -141,28 +167,35 @@ function initializeHistoryChart() {
                     display: true,
                     position: 'top',
                     labels: {
+                        color: '#2c3e50',
+                        font: {
+                            size: 14,
+                            weight: 'bold',
+                            family: "'Poppins', sans-serif"
+                        },
                         padding: 20,
                         usePointStyle: true,
-                        pointStyle: 'circle',
-                        font: {
-                            size: 12,
-                            weight: '600'
-                        }
+                        pointStyle: 'circle'
                     }
                 },
                 tooltip: {
-                    mode: 'index',
-                    intersect: false,
-                    backgroundColor: 'rgba(44, 62, 80, 0.9)',
+                    backgroundColor: 'rgba(44, 62, 80, 0.95)',
                     titleColor: '#ffffff',
                     bodyColor: '#ffffff',
                     borderColor: '#3498db',
-                    borderWidth: 1,
-                    cornerRadius: 8,
-                    padding: 12,
+                    borderWidth: 2,
+                    cornerRadius: 10,
+                    padding: 15,
+                    displayColors: false,
                     callbacks: {
-                        label: function(context) {
-                            return `Moisture: ${context.parsed.y.toFixed(1)}%`;
+                        label: (context) => `Moisture: ${context.parsed.y.toFixed(1)}%`,
+                        title: (context) => {
+                            const time = new Date(recentReadings[context[0].dataIndex].timestamp);
+                            return time.toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit'
+                            });
                         }
                     }
                 }
@@ -172,27 +205,27 @@ function initializeHistoryChart() {
                     beginAtZero: true,
                     max: 100,
                     grid: {
-                        color: 'rgba(0, 0, 0, 0.05)',
+                        color: 'rgba(0, 0, 0, 0.08)',
                         drawBorder: false
                     },
                     ticks: {
-                        font: {
-                            size: 11,
-                            weight: '600'
-                        },
                         color: '#7f8c8d',
-                        callback: function(value) {
-                            return value + '%';
-                        }
+                        font: {
+                            size: 12,
+                            weight: 'bold'
+                        },
+                        callback: (value) => `${value}%`,
+                        padding: 10
                     },
                     title: {
                         display: true,
                         text: 'Moisture Level (%)',
                         color: '#2c3e50',
                         font: {
-                            size: 12,
+                            size: 14,
                             weight: 'bold'
-                        }
+                        },
+                        padding: { top: 10, bottom: 20 }
                     }
                 },
                 x: {
@@ -200,50 +233,62 @@ function initializeHistoryChart() {
                         display: false
                     },
                     ticks: {
+                        color: '#7f8c8d',
                         font: {
                             size: 11,
-                            weight: '600'
+                            weight: 'bold'
                         },
-                        color: '#7f8c8d',
-                        maxRotation: 45
+                        maxRotation: 45,
+                        callback: (value, index) => {
+                            if (index % 5 === 0 || index === recentReadings.length - 1) {
+                                const time = new Date(recentReadings[index].timestamp);
+                                return time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            }
+                            return '';
+                        }
                     },
                     title: {
                         display: true,
-                        text: 'Time',
+                        text: 'Time (Last 30 Minutes)',
                         color: '#2c3e50',
                         font: {
-                            size: 12,
+                            size: 14,
                             weight: 'bold'
-                        }
+                        },
+                        padding: { top: 20, bottom: 10 }
                     }
                 }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart'
             }
         }
     });
 }
 
-function updateChartData() {
-    if (!historyChartInstance || recentReadings.length === 0) return;
+function updateHistoryChart() {
+    if (!historyChartInstance) return;
     
-    // Get last 30 readings for the chart
-    const last30Readings = recentReadings.slice(-30);
-    const labels = last30Readings.map(r => 
-        new Date(r.timestamp).toLocaleTimeString([], { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-        })
+    const dataToShow = recentReadings.slice(-30); // Last 30 readings
+    
+    historyChartInstance.data.labels = dataToShow.map(r => 
+        new Date(r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     );
-    const data = last30Readings.map(r => r.moisture);
     
-    historyChartInstance.data.labels = labels;
-    historyChartInstance.data.datasets[0].data = data;
+    historyChartInstance.data.datasets[0].data = dataToShow.map(r => r.moisture);
     
-    // Calculate statistics
-    if (data.length > 0) {
-        const current = data[data.length - 1];
-        const average = data.reduce((a, b) => a + b, 0) / data.length;
-        const max = Math.max(...data);
-        const min = Math.min(...data);
+    // Update statistics
+    if (dataToShow.length > 0) {
+        const moistureValues = dataToShow.map(r => r.moisture);
+        const current = moistureValues[moistureValues.length - 1];
+        const average = moistureValues.reduce((a, b) => a + b, 0) / moistureValues.length;
+        const max = Math.max(...moistureValues);
+        const min = Math.min(...moistureValues);
         
         elements.currentStat.textContent = `${current.toFixed(1)}%`;
         elements.averageStat.textContent = `${average.toFixed(1)}%`;
@@ -255,22 +300,22 @@ function updateChartData() {
 }
 
 function updateGauge(percentage) {
-    if (moistureGauge) {
-        moistureGauge.data.datasets[0].data = [percentage, 100 - percentage];
-        
-        // Set color based on moisture level
-        let color;
-        if (percentage <= 20) {
-            color = '#e74c3c';
-        } else if (percentage <= 75) {
-            color = '#2ecc71';
-        } else {
-            color = '#3498db';
-        }
-        
-        moistureGauge.data.datasets[0].backgroundColor = [color, 'rgba(255, 255, 255, 0.2)'];
-        moistureGauge.update('active');
+    if (!moistureGauge) return;
+    
+    moistureGauge.data.datasets[0].data = [percentage, 100 - percentage];
+    
+    // Update color based on moisture level
+    let color;
+    if (percentage <= 20) {
+        color = '#e74c3c'; // Red for dry
+    } else if (percentage <= 75) {
+        color = '#2ecc71'; // Green for optimal
+    } else {
+        color = '#3498db'; // Blue for too wet
     }
+    
+    moistureGauge.data.datasets[0].backgroundColor = [color, 'rgba(255, 255, 255, 0.2)'];
+    moistureGauge.update();
 }
 
 function getStatusClass(percentage) {
@@ -286,40 +331,19 @@ function getStatusText(percentage) {
 }
 
 function updateWarningBanner(percentage) {
-    const warningBanner = elements.warningBanner;
+    const banner = elements.warningBanner;
     
     if (percentage <= 20) {
-        warningBanner.style.display = 'block';
-        warningBanner.innerHTML = '<i class="fas fa-exclamation-circle"></i> WARNING: Plant needs water immediately!';
-        warningBanner.style.background = '#e74c3c';
+        banner.style.display = 'flex';
+        banner.innerHTML = '<i class="fas fa-exclamation-circle"></i> WARNING: Plant needs water immediately!';
+        banner.style.background = 'linear-gradient(135deg, #e74c3c, #c0392b)';
     } else if (percentage >= 90) {
-        warningBanner.style.display = 'block';
-        warningBanner.innerHTML = '<i class="fas fa-exclamation-circle"></i> ALERT: Soil is too wet!';
-        warningBanner.style.background = '#3498db';
+        banner.style.display = 'flex';
+        banner.innerHTML = '<i class="fas fa-exclamation-circle"></i> ALERT: Soil is too wet!';
+        banner.style.background = 'linear-gradient(135deg, #3498db, #2980b9)';
     } else {
-        warningBanner.style.display = 'none';
+        banner.style.display = 'none';
     }
-}
-
-function addToRecentReadings(data) {
-    const now = new Date();
-    const reading = {
-        timestamp: now.getTime(),
-        moisture: data.moisture || 0,
-        temperature: data.temperature || 0,
-        humidity: data.humidity || 0,
-        status: getStatusText(data.moisture || 0)
-    };
-    
-    recentReadings.push(reading);
-    
-    // Keep only last 100 readings
-    if (recentReadings.length > 100) {
-        recentReadings.shift();
-    }
-    
-    // Update records table
-    updateRecordsTable();
 }
 
 function updateRecordsTable() {
@@ -328,14 +352,14 @@ function updateRecordsTable() {
     // Clear table
     tableBody.innerHTML = '';
     
-    // Show last 10 readings (newest first)
-    const last10Readings = [...recentReadings].reverse().slice(0, 10);
+    // Show last 15 readings (newest first)
+    const readingsToShow = [...recentReadings].reverse().slice(0, 15);
     
-    last10Readings.forEach(reading => {
+    readingsToShow.forEach(reading => {
         const row = document.createElement('tr');
         const date = new Date(reading.timestamp);
         
-        // Determine status badge class
+        // Determine status and color
         let statusClass = '';
         let moistureColorClass = '';
         
@@ -360,7 +384,7 @@ function updateRecordsTable() {
             <td class="value-col">${reading.temperature.toFixed(1)}°C</td>
             <td class="percent-col">${reading.humidity.toFixed(1)}%</td>
             <td class="status-col">
-                <span class="status-badge ${statusClass}">${reading.status}</span>
+                <span class="status-badge ${statusClass}">${getStatusText(reading.moisture)}</span>
             </td>
         `;
         
@@ -372,10 +396,11 @@ function updateRecordsTable() {
 }
 
 function updateUI(data) {
-    console.log("Updating UI with data:", data);
+    console.log("📊 Updating UI with:", data);
     
     if (!data) {
         console.warn("No data received");
+        showDemoData();
         return;
     }
     
@@ -383,19 +408,22 @@ function updateUI(data) {
     const rawValue = data.rawValue || 0;
     const temperature = data.temperature || 0;
     const humidity = data.humidity || 0;
-    const statusClass = getStatusClass(moisture);
-    const statusText = getStatusText(moisture);
+    const status = data.moistureStatus || 'OK';
     
-    // Update main display
+    // Update display values
     elements.moisturePercent.textContent = moisture.toFixed(1);
     elements.percentageLarge.textContent = `${moisture.toFixed(1)}%`;
+    
+    // Update status with animation
+    const statusClass = getStatusClass(moisture);
+    const statusText = getStatusText(moisture);
     elements.plantStatusText.textContent = statusText;
     elements.plantStatusText.className = `plant-status-text ${statusClass}`;
     
     // Update warning banner
     updateWarningBanner(moisture);
     
-    // Update environment data
+    // Update sensor values
     elements.temperature.textContent = temperature.toFixed(1);
     elements.humidity.textContent = humidity.toFixed(1);
     elements.rawValue.textContent = rawValue;
@@ -404,6 +432,7 @@ function updateUI(data) {
     updateCount++;
     elements.updateCount.textContent = updateCount;
     elements.refreshStatus.textContent = 'Just now';
+    elements.refreshStatus.style.color = '#2ecc71';
     
     // Update timestamp
     const now = new Date();
@@ -413,7 +442,7 @@ function updateUI(data) {
         second: '2-digit'
     });
     
-    // Update device ID if available
+    // Update device ID
     if (data.deviceId && data.deviceId !== currentDeviceId) {
         currentDeviceId = data.deviceId;
         elements.deviceId.textContent = currentDeviceId;
@@ -421,23 +450,34 @@ function updateUI(data) {
     }
     
     // Add to recent readings
-    addToRecentReadings({
+    const newReading = {
+        timestamp: Date.now(),
         moisture: moisture,
         temperature: temperature,
         humidity: humidity
-    });
+    };
     
-    // Update gauge
+    recentReadings.push(newReading);
+    allReadings.push(newReading);
+    
+    // Keep only recent data
+    if (recentReadings.length > 100) {
+        recentReadings.shift();
+    }
+    
+    // Update charts and table
     updateGauge(moisture);
+    updateHistoryChart();
+    updateRecordsTable();
     
-    // Update chart
-    updateChartData();
+    // Animate update
+    animateUpdate();
     
-    console.log("UI updated successfully");
+    console.log("✅ UI Updated Successfully");
 }
 
 async function fetchData() {
-    console.log(`Fetching data for device: ${currentDeviceId}`);
+    console.log(`🔍 Fetching data for device: ${currentDeviceId}`);
     
     try {
         const url = `${FIREBASE_CONFIG.databaseURL}/plants/${currentDeviceId}.json`;
@@ -449,7 +489,6 @@ async function fetchData() {
         }
         
         const data = await response.json();
-        console.log("Received data from Firebase:", data);
         
         if (data === null) {
             console.warn("No data found at this path");
@@ -458,43 +497,37 @@ async function fetchData() {
         }
         
         updateUI(data);
+        connectionStatus = true;
         
     } catch (error) {
-        console.error('Error fetching data:', error);
-        
-        // Show connection error in UI
-        elements.moisturePercent.textContent = 'ERR';
-        elements.percentageLarge.textContent = 'ERROR';
-        elements.plantStatusText.textContent = 'CONNECTION FAILED';
-        elements.plantStatusText.className = 'plant-status-text status-need-water';
-        elements.refreshStatus.textContent = 'Connection Error';
-        
-        // Fall back to demo mode
+        console.error('❌ Error fetching data:', error);
+        connectionStatus = false;
         showDemoData();
     }
 }
 
 function showDemoData() {
-    console.log("Showing demo data");
+    console.log("🔄 Showing demo data");
     
-    const moisture = 40 + Math.random() * 30;
+    // Generate realistic demo data
+    const lastMoisture = recentReadings.length > 0 ? recentReadings[recentReadings.length - 1].moisture : 50;
+    const moisture = Math.max(0, Math.min(100, lastMoisture + (Math.random() * 4 - 2)));
     
     const demoData = {
         deviceId: currentDeviceId,
         moisture: moisture,
-        rawValue: Math.floor(Math.random() * 4096),
-        temperature: 22 + Math.random() * 5,
-        humidity: 40 + Math.random() * 30,
-        moistureStatus: 'OK',
-        needsWater: false
+        rawValue: Math.floor(1000 + moisture * 30),
+        temperature: 22 + Math.sin(Date.now() * 0.0001) * 3,
+        humidity: 50 + Math.cos(Date.now() * 0.00008) * 15,
+        moistureStatus: getStatusText(moisture)
     };
     
     updateUI(demoData);
     
-    // Update UI to indicate demo mode
-    elements.plantStatusText.textContent = 'DEMO MODE';
+    // Indicate demo mode
     elements.deviceId.textContent = currentDeviceId + ' (DEMO)';
-    elements.refreshStatus.textContent = 'Demo Mode';
+    elements.refreshStatus.textContent = 'Demo Mode • Waiting for sensor';
+    elements.refreshStatus.style.color = '#e74c3c';
 }
 
 function changeTimeRange(range) {
@@ -507,53 +540,199 @@ function changeTimeRange(range) {
     // Update time range
     currentTimeRange = range;
     
+    // Update display
     switch(range) {
         case 'minutes':
             elements.timeRangeValue.textContent = 'Last 30 Minutes';
             elements.chartInfoText.textContent = 'for the last 30 minutes (real-time data)';
+            // Show last 30 readings
+            recentReadings = allReadings.slice(-30);
             break;
         case 'hours':
             elements.timeRangeValue.textContent = 'Last 24 Hours';
             elements.chartInfoText.textContent = 'for the last 24 hours (hourly averages)';
+            // Generate hourly data
+            generateHourlyData();
             break;
         case 'days':
             elements.timeRangeValue.textContent = 'Last 7 Days';
             elements.chartInfoText.textContent = 'for the last 7 days (daily averages)';
+            // Generate daily data
+            generateDailyData();
             break;
+    }
+    
+    updateHistoryChart();
+}
+
+function generateHourlyData() {
+    // Generate 24 hourly averages
+    recentReadings = [];
+    const now = Date.now();
+    
+    for (let i = 23; i >= 0; i--) {
+        const hourStart = now - i * 3600000;
+        const hourEnd = hourStart + 3600000;
+        
+        // Get readings for this hour
+        const hourReadings = allReadings.filter(r => 
+            r.timestamp >= hourStart && r.timestamp < hourEnd
+        );
+        
+        if (hourReadings.length > 0) {
+            const avgMoisture = hourReadings.reduce((sum, r) => sum + r.moisture, 0) / hourReadings.length;
+            const avgTemp = hourReadings.reduce((sum, r) => sum + r.temperature, 0) / hourReadings.length;
+            const avgHumidity = hourReadings.reduce((sum, r) => sum + r.humidity, 0) / hourReadings.length;
+            
+            recentReadings.push({
+                timestamp: hourStart,
+                moisture: avgMoisture,
+                temperature: avgTemp,
+                humidity: avgHumidity
+            });
+        } else {
+            // If no data, generate sample
+            recentReadings.push({
+                timestamp: hourStart,
+                moisture: 45 + Math.sin(i * 0.3) * 15,
+                temperature: 22 + Math.sin(i * 0.1) * 3,
+                humidity: 50 + Math.sin(i * 0.2) * 15
+            });
+        }
+    }
+}
+
+function generateDailyData() {
+    // Generate 7 daily averages
+    recentReadings = [];
+    const now = Date.now();
+    
+    for (let i = 6; i >= 0; i--) {
+        const dayStart = now - i * 86400000;
+        const dayEnd = dayStart + 86400000;
+        
+        // Get readings for this day
+        const dayReadings = allReadings.filter(r => 
+            r.timestamp >= dayStart && r.timestamp < dayEnd
+        );
+        
+        if (dayReadings.length > 0) {
+            const avgMoisture = dayReadings.reduce((sum, r) => sum + r.moisture, 0) / dayReadings.length;
+            const avgTemp = dayReadings.reduce((sum, r) => sum + r.temperature, 0) / dayReadings.length;
+            const avgHumidity = dayReadings.reduce((sum, r) => sum + r.humidity, 0) / dayReadings.length;
+            
+            recentReadings.push({
+                timestamp: dayStart,
+                moisture: avgMoisture,
+                temperature: avgTemp,
+                humidity: avgHumidity
+            });
+        } else {
+            // If no data, generate sample
+            recentReadings.push({
+                timestamp: dayStart,
+                moisture: 45 + Math.sin(i * 0.8) * 20,
+                temperature: 22 + Math.sin(i * 0.3) * 4,
+                humidity: 50 + Math.sin(i * 0.4) * 20
+            });
+        }
     }
 }
 
 function refreshData() {
-    console.log("Refreshing all data...");
+    console.log("🔄 Manual refresh requested");
     fetchData();
-    showNotification("Plant data refreshed successfully");
+    showNotification("Plant data refreshed successfully!");
+    
+    // Add animation to refresh button
+    const btn = event.target.closest('.refresh-btn') || event.target.closest('.action-btn');
+    if (btn) {
+        btn.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            btn.style.transform = '';
+        }, 300);
+    }
 }
 
-function showNotification(message) {
+function startRealtimeUpdates() {
+    // Initial fetch
+    fetchData();
+    
+    // Update every 5 seconds
+    setInterval(() => {
+        if (connectionStatus) {
+            fetchData();
+        }
+    }, 5000);
+}
+
+function animateUIElements() {
+    // Add floating animation to cards
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
+        card.classList.add('floating');
+    });
+    
+    // Add pulse to status indicator
+    setInterval(() => {
+        const statusText = elements.plantStatusText;
+        if (statusText.classList.contains('status-need-water')) {
+            statusText.style.animation = 'pulse 2s infinite';
+        }
+    }, 1000);
+}
+
+function animateUpdate() {
+    // Animate the percentage change
+    const percentageElement = elements.percentageLarge;
+    percentageElement.style.transform = 'scale(1.1)';
+    percentageElement.style.color = '#2ecc71';
+    
+    setTimeout(() => {
+        percentageElement.style.transform = 'scale(1)';
+        percentageElement.style.color = '';
+    }, 500);
+}
+
+function showNotification(message, type = 'success') {
     // Create notification element
     const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: #2ecc71;
-        color: white;
-        padding: 15px 25px;
-        border-radius: 10px;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-        z-index: 1000;
-        font-weight: 600;
-        animation: slideIn 0.3s ease;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        border-left: 5px solid #27ae60;
+    notification.className = 'notification';
+    
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+    const bgColor = type === 'success' ? '#2ecc71' : '#e74c3c';
+    
+    notification.innerHTML = `
+        <i class="fas ${icon}"></i>
+        <span>${message}</span>
     `;
     
-    // Add keyframes for animation
+    // Add styles
+    Object.assign(notification.style, {
+        position: 'fixed',
+        top: '30px',
+        right: '30px',
+        background: bgColor,
+        color: 'white',
+        padding: '20px 30px',
+        borderRadius: '15px',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+        zIndex: '9999',
+        fontWeight: '700',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '15px',
+        border: '3px solid rgba(255, 255, 255, 0.3)',
+        backdropFilter: 'blur(10px)',
+        animation: 'slideInRight 0.5s ease, fadeOut 0.5s ease 2.5s',
+        maxWidth: '400px'
+    });
+    
+    // Add keyframes
     const style = document.createElement('style');
     style.textContent = `
-        @keyframes slideIn {
+        @keyframes slideInRight {
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
@@ -564,19 +743,32 @@ function showNotification(message) {
     `;
     document.head.appendChild(style);
     
-    notification.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
     document.body.appendChild(notification);
     
-    // Remove notification after 3 seconds
+    // Remove after 3 seconds
     setTimeout(() => {
-        notification.style.animation = 'fadeOut 0.3s ease';
-        setTimeout(() => {
-            if (document.body.contains(notification)) {
-                document.body.removeChild(notification);
-            }
-            if (document.head.contains(style)) {
-                document.head.removeChild(style);
-            }
-        }, 300);
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+        if (style.parentNode) {
+            style.parentNode.removeChild(style);
+        }
     }, 3000);
 }
+
+// Add floating animation to CSS
+document.head.insertAdjacentHTML('beforeend', `
+    <style>
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+`);
+
+// Initialize on load
+window.addEventListener('load', initDashboard);
