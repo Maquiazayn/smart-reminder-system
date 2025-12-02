@@ -6,9 +6,7 @@
     <title>Smart Plant Watering Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             margin: 0;
@@ -202,7 +200,6 @@
             opacity: 0.8;
         }
 
-        /* Recent Records Table Styles - Matching Your Picture */
         .records-container {
             margin-top: 20px;
         }
@@ -264,7 +261,6 @@
             transition: transform 0.2s ease;
         }
 
-        /* Column-specific styles matching your picture */
         .timestamp-col {
             font-family: 'Courier New', monospace;
             color: #2d3748;
@@ -303,7 +299,6 @@
             min-width: 120px;
         }
 
-        /* Status colors matching plant watering system */
         .status-need-water-badge {
             background-color: #ff6b6b;
             color: white;
@@ -322,7 +317,6 @@
             border: 2px solid #228be6;
         }
 
-        /* Water level colors for consistency */
         .water-level-low {
             color: #ff6b6b;
             font-weight: 800;
@@ -387,7 +381,6 @@
             font-weight: 600;
         }
 
-        /* Connection Status Styles */
         .connection-status {
             margin-top: 10px;
             padding: 8px 16px;
@@ -416,10 +409,26 @@
             border: 2px solid #ffd43b;
         }
 
+        .connection-demo {
+            background-color: rgba(102, 126, 234, 0.2);
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
         @keyframes pulse {
             0% { opacity: 1; }
             50% { opacity: 0.7; }
             100% { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
         }
 
         @media (max-width: 768px) {
@@ -496,9 +505,9 @@
             <div class="card">
                 <h2 class="card-title"><i class="fas fa-tint"></i> Current Plant Status</h2>
                 <div class="moisture-level">
-                    <div class="percentage" id="moisturePercent">--%</div>
-                    <div class="status-indicator" id="statusIndicator">
-                        LOADING...
+                    <div class="percentage" id="moisturePercent">65.5%</div>
+                    <div class="status-indicator status-ok" id="statusIndicator">
+                        OK
                     </div>
                 </div>
                 <div class="gauge-container">
@@ -514,25 +523,25 @@
                 <h2 class="card-title"><i class="fas fa-thermometer-half"></i> Environment</h2>
                 <div class="stats-grid">
                     <div class="stat-item">
-                        <div class="stat-value" id="temperature">--°C</div>
+                        <div class="stat-value" id="temperature">22.5°C</div>
                         <div class="stat-label">Temperature</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-value" id="humidity">--%</div>
+                        <div class="stat-value" id="humidity">45.2%</div>
                         <div class="stat-label">Humidity</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-value" id="rawValue">--</div>
+                        <div class="stat-value" id="rawValue">2450</div>
                         <div class="stat-label">Raw Sensor Value</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-value" id="updateCount">0</div>
+                        <div class="stat-value" id="updateCount">1</div>
                         <div class="stat-label">Updates Received</div>
                     </div>
                 </div>
                 
                 <div class="device-info">
-                    <p>Device ID: <span class="device-id" id="deviceId">------</span></p>
+                    <p>Device ID: <span class="device-id" id="deviceId">plant-sensor-001</span></p>
                 </div>
             </div>
         </div>
@@ -545,7 +554,7 @@
                     <button class="action-btn secondary" onclick="exportToCSV()">
                         <i class="fas fa-file-export"></i> Export CSV
                     </button>
-                    <button class="action-btn" onclick="refreshRecords()">
+                    <button class="action-btn" onclick="refreshData()">
                         <i class="fas fa-sync-alt"></i> Refresh
                     </button>
                 </div>
@@ -586,7 +595,7 @@
             </div>
         </div>
 
-        <button class="refresh-btn" onclick="fetchData()">
+        <button class="refresh-btn" onclick="refreshData()">
             <i class="fas fa-sync-alt"></i> Refresh All Data
         </button>
 
@@ -597,54 +606,66 @@
                 <span class="status-indicator status-ok" style="margin: 0 5px; padding: 5px 10px;">OK (31-70%)</span>
                 <span class="status-indicator status-too-wet" style="margin: 0 5px; padding: 5px 10px;">TOO WET (71-100%)</span>
             </p>
-            <p style="margin-top: 10px; font-size: 0.9rem;">
-                Firebase URL: https://smart-plant-watering-rem-e050a-default-rtdb.firebaseio.com
-            </p>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // Firebase Configuration
-        const firebaseConfig = {
-            databaseURL: "https://smart-plant-watering-rem-e050a-default-rtdb.firebaseio.com"
-        };
-
-        // Initialize Firebase
-        let firebaseApp;
-        let database;
+        // ============ FIREBASE CONFIG ============
+        const FIREBASE_URL = "https://smart-plant-watering-rem-e050a-default-rtdb.firebaseio.com";
         
-        try {
-            firebaseApp = firebase.initializeApp(firebaseConfig);
-            database = firebase.database();
-            console.log("Firebase initialized successfully");
-            updateConnectionStatus('connected', 'Connected to Firebase');
-        } catch (error) {
-            console.error("Firebase initialization error:", error);
-            updateConnectionStatus('disconnected', 'Firebase Error: ' + error.message);
-        }
-
-        // Dashboard Variables
+        // ============ GLOBAL VARIABLES ============
         let currentDeviceId = 'plant-sensor-001';
-        let updateCount = 0;
+        let updateCount = 1;
         let moistureHistory = [];
         const MAX_HISTORY = 20;
-        const SENSOR_BUFFER_SIZE = 5;
-        let moistureBuffer = [];
-        let temperatureBuffer = [];
-        let humidityBuffer = [];
-
-        // Calibration
+        
+        // Calibration for moisture sensor
         const CALIBRATION = {
             DRY_VALUE: 4095,
             WET_VALUE: 1800,
             MIN_PERCENTAGE: 0,
             MAX_PERCENTAGE: 100
         };
-
-        // Sample data
-        let sampleRecords = [];
-
+        
+        // Sample records for initial display
+        const sampleRecords = [
+            {
+                timestamp: new Date(Date.now() - 300000).toLocaleString(),
+                moistureLevel: 65.5,
+                temperature: 22.5,
+                humidity: 45.2,
+                status: "OK"
+            },
+            {
+                timestamp: new Date(Date.now() - 240000).toLocaleString(),
+                moistureLevel: 68.2,
+                temperature: 22.7,
+                humidity: 46.8,
+                status: "OK"
+            },
+            {
+                timestamp: new Date(Date.now() - 180000).toLocaleString(),
+                moistureLevel: 25.4,
+                temperature: 22.3,
+                humidity: 44.8,
+                status: "NEED WATER"
+            },
+            {
+                timestamp: new Date(Date.now() - 120000).toLocaleString(),
+                moistureLevel: 72.4,
+                temperature: 23.2,
+                humidity: 49.5,
+                status: "TOO WET"
+            },
+            {
+                timestamp: new Date(Date.now() - 60000).toLocaleString(),
+                moistureLevel: 42.1,
+                temperature: 22.6,
+                humidity: 46.2,
+                status: "OK"
+            }
+        ];
+        
         // DOM Elements
         const elements = {
             moisturePercent: document.getElementById('moisturePercent'),
@@ -659,280 +680,182 @@
             recordCount: document.getElementById('recordCount'),
             connectionStatus: document.getElementById('connectionStatus')
         };
-
-        // Charts
+        
+        // Chart instances
         let moistureGauge = null;
         let historyChart = null;
-
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', initDashboard);
-
-        function initDashboard() {
-            console.log("Initializing Smart Plant Dashboard...");
-            
-            // Get device ID from URL or use default
-            const urlParams = new URLSearchParams(window.location.search);
-            const deviceFromUrl = urlParams.get('device');
-            if (deviceFromUrl) {
-                currentDeviceId = deviceFromUrl;
-            }
-            
-            elements.deviceId.textContent = currentDeviceId;
+        
+        // ============ INITIALIZATION ============
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Dashboard initializing...");
             
             // Initialize charts
             initializeGauge();
             initializeHistoryChart();
             
-            // Load initial data
-            fetchData();
+            // Setup initial data
+            setupInitialData();
             
-            // Setup auto-refresh
-            setInterval(fetchData, 5000);
+            // Try to connect to Firebase
+            checkFirebaseConnection();
             
-            // Test Firebase connection
-            testFirebaseConnection();
+            // Auto-refresh every 30 seconds
+            setInterval(refreshData, 30000);
             
-            console.log("Dashboard initialized for device:", currentDeviceId);
+            console.log("Dashboard initialized!");
+        });
+        
+        // ============ SETUP INITIAL DATA ============
+        function setupInitialData() {
+            // Update last update time
+            const now = new Date();
+            elements.lastUpdate.textContent = now.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            
+            // Update gauge
+            updateGauge(65.5);
+            
+            // Update history chart
+            updateHistoryChart();
+            
+            // Update records table
+            updateRecordsTable();
+            
+            // Update record count
+            elements.recordCount.textContent = sampleRecords.length;
         }
-
-        function updateConnectionStatus(status, message = '') {
-            if (!elements.connectionStatus) return;
-            
-            elements.connectionStatus.className = 'connection-status';
-            
-            switch(status) {
-                case 'connected':
-                    elements.connectionStatus.className += ' connection-connected';
-                    elements.connectionStatus.innerHTML = `<i class="fas fa-check-circle"></i> ${message || 'Connected to Firebase'}`;
-                    break;
-                case 'disconnected':
-                    elements.connectionStatus.className += ' connection-disconnected';
-                    elements.connectionStatus.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message || 'Disconnected from Firebase'}`;
-                    break;
-                case 'connecting':
-                    elements.connectionStatus.className += ' connection-connecting';
-                    elements.connectionStatus.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> ${message || 'Connecting to Firebase...'}`;
-                    break;
-            }
-        }
-
-        function testFirebaseConnection() {
-            if (!database) {
-                updateConnectionStatus('disconnected', 'Firebase not initialized');
-                return;
-            }
-            
-            updateConnectionStatus('connecting', 'Testing Firebase connection...');
-            
-            // Try to read from root to test connection
-            database.ref('/').once('value')
-                .then((snapshot) => {
-                    const data = snapshot.val();
-                    console.log("Firebase connection test successful:", data);
-                    
-                    if (data && Object.keys(data).length > 0) {
-                        updateConnectionStatus('connected', `Connected to Firebase (${Object.keys(data).length} devices found)`);
-                    } else {
-                        updateConnectionStatus('connected', 'Connected to Firebase (No data found)');
-                    }
-                })
-                .catch((error) => {
-                    console.error("Firebase connection test failed:", error);
-                    updateConnectionStatus('disconnected', `Connection failed: ${error.message}`);
-                });
-        }
-
-        async function fetchData() {
-            console.log(`Fetching data for device: ${currentDeviceId}`);
-            
-            if (!database) {
-                console.error("Firebase not initialized");
-                showDemoData();
-                return;
-            }
-            
-            updateConnectionStatus('connecting', 'Fetching sensor data...');
+        
+        // ============ CHECK FIREBASE CONNECTION ============
+        async function checkFirebaseConnection() {
+            updateConnectionStatus('connecting', 'Checking Firebase connection...');
             
             try {
-                // Try multiple possible data locations
-                const possiblePaths = [
-                    `plants/${currentDeviceId}/latest`,
-                    `plants/${currentDeviceId}`,
-                    `devices/${currentDeviceId}`,
-                    `sensor/${currentDeviceId}/latest`,
-                    `sensor/${currentDeviceId}`,
-                    `${currentDeviceId}/latest`
-                ];
+                const response = await fetch(`${FIREBASE_URL}/.json`);
                 
-                let data = null;
-                let foundPath = null;
-                
-                // Try each path
-                for (const path of possiblePaths) {
-                    try {
-                        const snapshot = await database.ref(path).once('value');
-                        const pathData = snapshot.val();
-                        
-                        if (pathData !== null) {
-                            console.log(`Found data at path: ${path}`, pathData);
-                            data = pathData;
-                            foundPath = path;
-                            break;
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data && Object.keys(data).length > 0) {
+                        // Check for plant data
+                        if (data.plants) {
+                            const plantKeys = Object.keys(data.plants);
+                            if (plantKeys.length > 0) {
+                                currentDeviceId = plantKeys[0];
+                                elements.deviceId.textContent = currentDeviceId;
+                                updateConnectionStatus('connected', `Connected! Found ${plantKeys.length} plant(s)`);
+                                fetchRealData();
+                                return;
+                            }
                         }
-                    } catch (error) {
-                        console.log(`No data at path: ${path}`);
-                    }
-                }
-                
-                if (data === null) {
-                    console.log("No data found in Firebase, checking database root...");
-                    
-                    // Check what's available in database
-                    const rootSnapshot = await database.ref('/').once('value');
-                    const rootData = rootSnapshot.val();
-                    console.log("Database root structure:", rootData);
-                    
-                    if (rootData) {
-                        // Try to find any plant data
-                        for (const key in rootData) {
-                            if (rootData[key] && typeof rootData[key] === 'object') {
-                                const deviceData = rootData[key];
-                                if (deviceData.latest || deviceData.moisture || deviceData.temperature) {
-                                    data = deviceData.latest || deviceData;
-                                    foundPath = key;
+                        
+                        // Check for any sensor data
+                        let foundSensor = false;
+                        for (const key in data) {
+                            if (key !== '.settings' && key !== '.info' && data[key]) {
+                                const item = data[key];
+                                if (item.moisture !== undefined || item.temperature !== undefined) {
                                     currentDeviceId = key;
-                                    elements.deviceId.textContent = key;
-                                    console.log(`Found device data at: ${key}`);
+                                    elements.deviceId.textContent = currentDeviceId;
+                                    foundSensor = true;
                                     break;
                                 }
                             }
                         }
+                        
+                        if (foundSensor) {
+                            updateConnectionStatus('connected', 'Connected! Found sensor data');
+                            fetchRealData();
+                        } else {
+                            updateConnectionStatus('demo', 'Connected but no sensor data found - Demo Mode');
+                        }
+                    } else {
+                        updateConnectionStatus('demo', 'Firebase connected but empty - Demo Mode');
+                    }
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                console.error("Firebase connection error:", error);
+                updateConnectionStatus('demo', `Demo Mode (${error.message})`);
+            }
+        }
+        
+        // ============ FETCH REAL DATA FROM FIREBASE ============
+        async function fetchRealData() {
+            try {
+                // Try different paths
+                const pathsToTry = [
+                    `plants/${currentDeviceId}`,
+                    `plants/${currentDeviceId}/latest`,
+                    `${currentDeviceId}`,
+                    `sensor/${currentDeviceId}`,
+                    `devices/${currentDeviceId}`
+                ];
+                
+                for (const path of pathsToTry) {
+                    try {
+                        const response = await fetch(`${FIREBASE_URL}/${path}.json`);
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            
+                            if (data) {
+                                console.log("Found data at:", path, data);
+                                processFirebaseData(data);
+                                return;
+                            }
+                        }
+                    } catch (error) {
+                        console.log(`No data at ${path}:`, error.message);
                     }
                 }
                 
-                if (data === null) {
-                    console.warn("No plant data found in Firebase");
-                    updateConnectionStatus('disconnected', 'No plant data found - Using Demo Mode');
-                    showDemoData();
-                    return;
-                }
-                
-                console.log(`Successfully retrieved data from: ${foundPath}`, data);
-                
-                // Process the data
-                let processedData;
-                if (data.latest) {
-                    processedData = processSensorData(data.latest);
-                } else {
-                    processedData = processSensorData(data);
-                }
-                
-                // Update UI
-                updateUI(processedData);
-                updateConnectionStatus('connected', `Receiving data from ${currentDeviceId}`);
-                
-                // Add to records
-                addToRecords(processedData);
+                console.log("No real data found in Firebase");
                 
             } catch (error) {
-                console.error("Error fetching data from Firebase:", error);
-                updateConnectionStatus('disconnected', `Error: ${error.message}`);
-                showDemoData();
+                console.error("Error fetching real data:", error);
             }
         }
-
-        function processSensorData(data) {
-            if (!data) return null;
+        
+        // ============ PROCESS FIREBASE DATA ============
+        function processFirebaseData(data) {
+            let sensorData = data.latest || data;
             
-            let rawMoisture = data.moisture_value || data.moisture || data.value || 0;
-            let rawPercentage = data.moisture_percent || data.percentage || data.level || 0;
+            // Extract values
+            const rawValue = sensorData.moisture_value || sensorData.moisture || sensorData.value || 2450;
+            const moisturePercent = sensorData.moisture_percent || sensorData.percentage || 
+                                  convertToPercentage(rawValue);
+            const temp = sensorData.temperature || sensorData.temp || 22.5;
+            const humidity = sensorData.humidity || sensorData.hum || 45.2;
             
-            // Convert raw value to percentage if needed
-            if (rawMoisture > 0 && rawPercentage === 0) {
-                rawPercentage = convertToPercentage(rawMoisture);
-            }
+            // Update display
+            elements.moisturePercent.textContent = `${moisturePercent.toFixed(1)}%`;
+            elements.rawValue.textContent = rawValue;
+            elements.temperature.textContent = `${temp.toFixed(1)}°C`;
+            elements.humidity.textContent = `${humidity.toFixed(1)}%`;
             
-            // Get previous values for filtering
-            const prevMoisture = moistureBuffer.length > 0 ? moistureBuffer[moistureBuffer.length - 1] : null;
-            
-            // Filter out spikes
-            const filteredPercentage = filterSensorData(rawPercentage, prevMoisture, 15);
-            
-            // Add to buffers
-            const smoothedMoisture = addToBuffer(moistureBuffer, filteredPercentage);
-            const smoothedTemperature = addToBuffer(temperatureBuffer, data.temperature || data.temp || 22);
-            const smoothedHumidity = addToBuffer(humidityBuffer, data.humidity || data.hum || 45);
-            
-            // Apply smoothing
-            const finalMoisture = exponentialSmoothing(smoothedMoisture, prevMoisture, 0.2);
-            
-            return {
-                device_id: currentDeviceId,
-                moisture_value: rawMoisture,
-                moisture_percent: parseFloat(finalMoisture.toFixed(1)),
-                temperature: parseFloat(smoothedTemperature.toFixed(1)),
-                humidity: parseFloat(smoothedHumidity.toFixed(1)),
-                timestamp: data.timestamp || Date.now()
-            };
-        }
-
-        function addToBuffer(buffer, value, maxSize = SENSOR_BUFFER_SIZE) {
-            buffer.push(value);
-            if (buffer.length > maxSize) {
-                buffer.shift();
-            }
-            
-            // Calculate median (more resistant to outliers)
-            const sorted = [...buffer].sort((a, b) => a - b);
-            const mid = Math.floor(sorted.length / 2);
-            
-            if (sorted.length % 2 === 0) {
-                return (sorted[mid - 1] + sorted[mid]) / 2;
-            }
-            return sorted[mid];
-        }
-
-        function exponentialSmoothing(newValue, oldValue, alpha = 0.3) {
-            if (oldValue === null || oldValue === undefined) return newValue;
-            return (alpha * newValue) + ((1 - alpha) * oldValue);
-        }
-
-        function convertToPercentage(rawValue) {
-            const clampedValue = Math.max(Math.min(rawValue, CALIBRATION.DRY_VALUE), CALIBRATION.WET_VALUE);
-            const percentage = 100 - ((clampedValue - CALIBRATION.WET_VALUE) / 
-                (CALIBRATION.DRY_VALUE - CALIBRATION.WET_VALUE)) * 100;
-            return Math.max(CALIBRATION.MIN_PERCENTAGE, Math.min(CALIBRATION.MAX_PERCENTAGE, percentage));
-        }
-
-        function filterSensorData(currentValue, previousValue, maxChange = 10) {
-            if (previousValue === null || previousValue === undefined) return currentValue;
-            
-            const change = Math.abs(currentValue - previousValue);
-            
-            if (change > maxChange) {
-                console.warn(`Filtered out spike: ${change.toFixed(1)}% change`);
-                return previousValue;
-            }
-            
-            return currentValue;
-        }
-
-        function updateUI(data) {
-            if (!data) return;
-            
-            const percentage = data.moisture_percent || 0;
-            const statusText = getStatusText(percentage);
-            const statusClass = getStatusClass(percentage);
-            
-            // Update main display
-            elements.moisturePercent.textContent = `${percentage.toFixed(1)}%`;
+            // Update status
+            const statusClass = getStatusClass(moisturePercent);
+            const statusText = getStatusText(moisturePercent);
             elements.statusIndicator.textContent = statusText;
             elements.statusIndicator.className = `status-indicator ${statusClass}`;
             
-            // Update environment data
-            elements.temperature.textContent = `${data.temperature.toFixed(1)}°C`;
-            elements.humidity.textContent = `${data.humidity.toFixed(1)}%`;
-            elements.rawValue.textContent = data.moisture_value || 'N/A';
+            // Update gauge
+            updateGauge(moisturePercent);
+            
+            // Update history
+            moistureHistory.push({
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                value: moisturePercent
+            });
+            if (moistureHistory.length > MAX_HISTORY) moistureHistory.shift();
+            updateHistoryChart();
+            
+            // Add to records
+            addNewRecord(moisturePercent, temp, humidity, statusText);
             
             // Update counters
             updateCount++;
@@ -946,49 +869,56 @@
                 second: '2-digit'
             });
             
-            // Update device ID
-            elements.deviceId.textContent = currentDeviceId;
-            
-            // Update charts
-            updateGauge(percentage);
-            updateHistoryChart(percentage, data.timestamp);
-            
-            // Update buffer status in tooltip
-            elements.rawValue.title = `Data buffer: ${moistureBuffer.length}/${SENSOR_BUFFER_SIZE} readings`;
+            // Update connection status
+            updateConnectionStatus('connected', `Live data from ${currentDeviceId}`);
         }
-
-        function getStatusText(percentage) {
-            if (percentage <= 30) return 'NEED WATER';
-            if (percentage <= 70) return 'OK';
-            return 'TOO WET';
+        
+        // ============ CONVERT RAW VALUE TO PERCENTAGE ============
+        function convertToPercentage(rawValue) {
+            const clampedValue = Math.max(Math.min(rawValue, CALIBRATION.DRY_VALUE), CALIBRATION.WET_VALUE);
+            const percentage = 100 - ((clampedValue - CALIBRATION.WET_VALUE) / 
+                (CALIBRATION.DRY_VALUE - CALIBRATION.WET_VALUE)) * 100;
+            return Math.max(CALIBRATION.MIN_PERCENTAGE, Math.min(CALIBRATION.MAX_PERCENTAGE, percentage));
         }
-
+        
+        // ============ UPDATE CONNECTION STATUS ============
+        function updateConnectionStatus(status, message = '') {
+            elements.connectionStatus.className = 'connection-status';
+            
+            switch(status) {
+                case 'connected':
+                    elements.connectionStatus.className += ' connection-connected';
+                    elements.connectionStatus.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+                    break;
+                case 'disconnected':
+                    elements.connectionStatus.className += ' connection-disconnected';
+                    elements.connectionStatus.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+                    break;
+                case 'connecting':
+                    elements.connectionStatus.className += ' connection-connecting';
+                    elements.connectionStatus.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> ${message}`;
+                    break;
+                case 'demo':
+                    elements.connectionStatus.className += ' connection-demo';
+                    elements.connectionStatus.innerHTML = `<i class="fas fa-flask"></i> ${message}`;
+                    break;
+            }
+        }
+        
+        // ============ GET STATUS FUNCTIONS ============
         function getStatusClass(percentage) {
             if (percentage <= 30) return 'status-need-water';
             if (percentage <= 70) return 'status-ok';
             return 'status-too-wet';
         }
-
-        function addToRecords(data) {
-            const newRecord = {
-                timestamp: new Date(data.timestamp).toLocaleString(),
-                moistureLevel: data.moisture_percent,
-                temperature: data.temperature,
-                humidity: data.humidity,
-                status: getStatusText(data.moisture_percent)
-            };
-            
-            // Add to beginning of array
-            sampleRecords.unshift(newRecord);
-            
-            // Keep only last 10 records
-            if (sampleRecords.length > 10) {
-                sampleRecords.pop();
-            }
-            
-            updateRecordsTable();
+        
+        function getStatusText(percentage) {
+            if (percentage <= 30) return 'NEED WATER';
+            if (percentage <= 70) return 'OK';
+            return 'TOO WET';
         }
-
+        
+        // ============ UPDATE RECORDS TABLE ============
         function updateRecordsTable() {
             const tableBody = elements.recordsTableBody;
             
@@ -996,11 +926,10 @@
                 tableBody.innerHTML = `
                     <tr>
                         <td colspan="5" style="text-align: center; padding: 30px; color: #666;">
-                            <i class="fas fa-database"></i> No records yet. Data will appear here when available.
+                            <i class="fas fa-database"></i> No records yet
                         </td>
                     </tr>
                 `;
-                elements.recordCount.textContent = '0';
                 return;
             }
             
@@ -1037,45 +966,36 @@
             tableBody.innerHTML = tableHTML;
             elements.recordCount.textContent = sampleRecords.length;
         }
-
-        function showDemoData() {
-            console.log("Showing demo data");
-            
-            // Generate realistic demo data
-            const baseMoisture = 45;
-            const timeVariation = Math.sin(Date.now() / 600000) * 15; // Slow variation over time
-            const randomNoise = (Math.random() - 0.5) * 3;
-            const percentage = Math.max(20, Math.min(80, baseMoisture + timeVariation + randomNoise));
-            
-            const processedPercentage = addToBuffer(moistureBuffer, percentage);
-            
-            const demoData = {
-                device_id: currentDeviceId,
-                moisture_value: Math.floor(CALIBRATION.WET_VALUE + 
-                    ((100 - processedPercentage) / 100) * (CALIBRATION.DRY_VALUE - CALIBRATION.WET_VALUE)),
-                moisture_percent: processedPercentage,
-                temperature: 22 + Math.sin(Date.now() / 900000) * 5,
-                humidity: 45 + Math.cos(Date.now() / 900000) * 15,
-                timestamp: Date.now()
+        
+        // ============ ADD NEW RECORD ============
+        function addNewRecord(moisture, temp, humidity, status) {
+            const newRecord = {
+                timestamp: new Date().toLocaleString(),
+                moistureLevel: moisture,
+                temperature: temp,
+                humidity: humidity,
+                status: status
             };
             
-            updateUI(demoData);
+            // Add to beginning of array
+            sampleRecords.unshift(newRecord);
             
-            // Mark as demo in device ID
-            elements.deviceId.textContent = currentDeviceId + ' (Demo)';
-            
-            // Add demo record occasionally
-            if (Math.random() > 0.7) {
-                addToRecords(demoData);
+            // Keep only last 10 records
+            if (sampleRecords.length > 10) {
+                sampleRecords.pop();
             }
+            
+            updateRecordsTable();
         }
-
-        function refreshRecords() {
+        
+        // ============ REFRESH DATA ============
+        function refreshData() {
             console.log("Refreshing data...");
-            fetchData();
-            showNotification("Refreshing sensor data...");
+            checkFirebaseConnection();
+            showNotification("Refreshing data...");
         }
-
+        
+        // ============ EXPORT TO CSV ============
         function exportToCSV() {
             if (sampleRecords.length === 0) {
                 showNotification("No data to export", "error");
@@ -1108,13 +1028,14 @@
             
             showNotification("CSV file downloaded successfully");
         }
-
+        
+        // ============ SHOW NOTIFICATION ============
         function showNotification(message, type = 'success') {
             // Remove existing notifications
             document.querySelectorAll('.notification').forEach(n => n.remove());
             
             const notification = document.createElement('div');
-            notification.className = `notification notification-${type}`;
+            notification.className = 'notification';
             notification.style.cssText = `
                 position: fixed;
                 top: 20px;
@@ -1146,8 +1067,8 @@
                 }, 300);
             }, 3000);
         }
-
-        // Initialize Gauge Chart
+        
+        // ============ CHART FUNCTIONS ============
         function initializeGauge() {
             const ctx = document.getElementById('moistureGauge').getContext('2d');
             
@@ -1155,8 +1076,8 @@
                 type: 'doughnut',
                 data: {
                     datasets: [{
-                        data: [50, 50],
-                        backgroundColor: ['#667eea', '#e9ecef'],
+                        data: [65.5, 34.5],
+                        backgroundColor: ['#51cf66', '#e9ecef'],
                         borderWidth: 0,
                         circumference: 180,
                         rotation: 270
@@ -1173,18 +1094,28 @@
                 }
             });
         }
-
-        // Initialize History Chart
+        
         function initializeHistoryChart() {
             const ctx = document.getElementById('historyChart').getContext('2d');
+            
+            // Generate initial history data
+            const historyData = [];
+            const labels = [];
+            const now = Date.now();
+            
+            for (let i = MAX_HISTORY - 1; i >= 0; i--) {
+                const time = new Date(now - i * 30000);
+                labels.push(time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+                historyData.push(50 + Math.sin(i * 0.5) * 20 + Math.random() * 5);
+            }
             
             historyChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: [],
+                    labels: labels,
                     datasets: [{
                         label: 'Moisture %',
-                        data: [],
+                        data: historyData,
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
                         fill: true,
@@ -1216,8 +1147,7 @@
                 }
             });
         }
-
-        // Update Gauge
+        
         function updateGauge(percentage) {
             if (!moistureGauge) return;
             
@@ -1235,77 +1165,70 @@
             moistureGauge.data.datasets[0].backgroundColor = [color, '#e9ecef'];
             moistureGauge.update();
         }
-
-        // Update History Chart
-        function updateHistoryChart(percentage, timestamp) {
-            if (!historyChart) return;
-            
-            const timeLabel = new Date(timestamp).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-            
-            moistureHistory.push({percentage, time: timeLabel});
-            
-            if (moistureHistory.length > MAX_HISTORY) {
-                moistureHistory.shift();
-            }
+        
+        function updateHistoryChart() {
+            if (!historyChart || moistureHistory.length === 0) return;
             
             historyChart.data.labels = moistureHistory.map(item => item.time);
-            historyChart.data.datasets[0].data = moistureHistory.map(item => item.percentage);
+            historyChart.data.datasets[0].data = moistureHistory.map(item => item.value);
             historyChart.update();
         }
-
-        // Add CSS animations
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
+        
+        // ============ DEMO DATA UPDATER ============
+        function updateDemoData() {
+            // Only update if in demo mode
+            if (!elements.connectionStatus.textContent.includes('Demo')) return;
+            
+            // Simulate small changes
+            const currentMoisture = parseFloat(elements.moisturePercent.textContent);
+            const change = (Math.random() - 0.5) * 2; // Small random change
+            const newMoisture = Math.max(20, Math.min(80, currentMoisture + change));
+            
+            // Update display
+            elements.moisturePercent.textContent = `${newMoisture.toFixed(1)}%`;
+            
+            const statusClass = getStatusClass(newMoisture);
+            const statusText = getStatusText(newMoisture);
+            elements.statusIndicator.textContent = statusText;
+            elements.statusIndicator.className = `status-indicator ${statusClass}`;
+            
+            // Update gauge
+            updateGauge(newMoisture);
+            
+            // Update history
+            moistureHistory.push({
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                value: newMoisture
+            });
+            if (moistureHistory.length > MAX_HISTORY) moistureHistory.shift();
+            updateHistoryChart();
+            
+            // Occasionally add to records
+            if (Math.random() > 0.7) {
+                const temp = 22 + (Math.random() - 0.5) * 2;
+                const humidity = 45 + (Math.random() - 0.5) * 10;
+                addNewRecord(newMoisture, temp, humidity, statusText);
             }
-            @keyframes fadeOut {
-                from { opacity: 1; }
-                to { opacity: 0; }
-            }
-            .fa-spin {
-                animation: fa-spin 2s linear infinite;
-            }
-            @keyframes fa-spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-        `;
-        document.head.appendChild(style);
-
-        // Auto-refresh for demo mode
-        setInterval(() => {
-            const statusText = elements.connectionStatus ? elements.connectionStatus.textContent : '';
-            if (statusText.includes('Demo') || statusText.includes('disconnected')) {
-                // Update demo data slightly
-                const currentPercent = parseFloat(elements.moisturePercent.textContent);
-                if (!isNaN(currentPercent)) {
-                    const variation = (Math.random() - 0.5) * 0.3;
-                    moistureBuffer.push(Math.max(20, Math.min(80, currentPercent + variation)));
-                    if (moistureBuffer.length > SENSOR_BUFFER_SIZE) {
-                        moistureBuffer.shift();
-                    }
-                }
-            }
-        }, 30000);
-
-        // Keyboard shortcuts
+            
+            // Update timestamp
+            const now = new Date();
+            elements.lastUpdate.textContent = now.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+        
+        // Update demo data every 10 seconds
+        setInterval(updateDemoData, 10000);
+        
+        // ============ KEYBOARD SHORTCUTS ============
         document.addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.key === 'r') {
                 e.preventDefault();
-                fetchData();
-            }
-            if (e.ctrlKey && e.key === 't') {
-                e.preventDefault();
-                testFirebaseConnection();
+                refreshData();
             }
         });
-
-        console.log("Dashboard script loaded successfully!");
     </script>
 </body>
 </html>
