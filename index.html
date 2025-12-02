@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -123,7 +124,7 @@
         }
 
         .history-chart {
-            height: 200px;
+            height: 250px;
             margin-top: 20px;
         }
 
@@ -170,6 +171,10 @@
             color: #666;
             font-size: 0.9rem;
             margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
         }
 
         .refresh-btn {
@@ -185,6 +190,10 @@
             cursor: pointer;
             transition: background 0.3s ease;
             margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
         .refresh-btn:hover {
@@ -197,6 +206,42 @@
             margin-top: 40px;
             padding: 20px;
             opacity: 0.8;
+        }
+
+        /* Loading overlay styles */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+            font-size: 1.5rem;
+            flex-direction: column;
+        }
+
+        .loading-overlay.hidden {
+            display: none;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         /* Recent Records Table Styles - Matching Your Picture */
@@ -384,6 +429,28 @@
             font-weight: 600;
         }
 
+        .interval-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+            display: inline-block;
+            font-size: 0.9rem;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .countdown-timer {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #667eea;
+            margin-top: 5px;
+            padding: 5px 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            display: inline-block;
+        }
+
         @keyframes pulse {
             0% { opacity: 1; }
             50% { opacity: 0.7; }
@@ -428,6 +495,25 @@
                 font-size: 0.85rem;
                 min-width: 100px;
             }
+
+            .loading-overlay {
+                font-size: 1.2rem;
+                padding: 20px;
+                text-align: center;
+            }
+
+            .loading {
+                width: 40px;
+                height: 40px;
+            }
+
+            .percentage {
+                font-size: 3rem;
+            }
+
+            .history-chart {
+                height: 200px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -447,14 +533,37 @@
                 padding: 8px 15px;
                 font-size: 0.9rem;
             }
+
+            .percentage {
+                font-size: 2.5rem;
+            }
+
+            .status-indicator {
+                padding: 8px 15px;
+                font-size: 1rem;
+            }
+
+            .history-chart {
+                height: 180px;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading"></div>
+        <div>Connecting to Smart Plant Sensor...</div>
+        <div style="font-size: 1rem; margin-top: 10px; opacity: 0.8;">Fetching real-time data (1-minute intervals)</div>
+    </div>
+
     <div class="container">
         <div class="header">
             <h1><i class="fas fa-seedling"></i> Smart Plant Watering Dashboard</h1>
             <p>Real-time monitoring system for all your plants' health</p>
+            <div class="interval-info">
+                <i class="fas fa-clock"></i> Data updates every 1 minute
+            </div>
         </div>
 
         <div class="dashboard">
@@ -472,6 +581,7 @@
                 
                 <div class="last-update">
                     Last updated: <span id="lastUpdate">--</span>
+                    <div id="countdownTimer"></div>
                 </div>
             </div>
 
@@ -529,11 +639,17 @@
                     </thead>
                     <tbody id="recordsTableBody">
                         <!-- Records will be populated by JavaScript -->
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 40px; color: #718096;">
+                                <i class="fas fa-spinner fa-spin" style="margin-right: 10px;"></i>
+                                Loading plant records...
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
                 
                 <div class="data-count">
-                    Showing <span id="recordCount">0</span> recent records
+                    Showing <span id="recordCount">0</span> recent records (1-minute intervals)
                 </div>
             </div>
         </div>
@@ -547,7 +663,7 @@
         </div>
 
         <button class="refresh-btn" onclick="fetchData()">
-            <i class="fas fa-sync-alt"></i> Refresh All Data
+            <i class="fas fa-sync-alt"></i> Refresh All Data (1-minute interval)
         </button>
 
         <div class="footer">
@@ -556,6 +672,9 @@
                 <span class="status-indicator status-need-water" style="margin: 0 5px; padding: 5px 10px;">NEED WATER (0-30%)</span>
                 <span class="status-indicator status-ok" style="margin: 0 5px; padding: 5px 10px;">OK (31-70%)</span>
                 <span class="status-indicator status-too-wet" style="margin: 0 5px; padding: 5px 10px;">TOO WET (71-100%)</span>
+            </p>
+            <p style="margin-top: 10px; font-size: 0.9rem;">
+                <i class="fas fa-info-circle"></i> Data is updated from ESP32 every 1 minute. Dashboard refreshes automatically.
             </p>
         </div>
     </div>
