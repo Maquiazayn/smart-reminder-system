@@ -1,4 +1,4 @@
-// dashboard.js - Single Plant Monitoring Dashboard with Multiple Time Ranges
+// dashboard.js - Single Plant Monitoring Dashboard
 const FIREBASE_CONFIG = {
     apiKey: "AIzaSyAi17Nr_DVUflPmsMzpx8pptqcZxT2AfUQ",
     authDomain: "smart-plant-watering-rem-e050a.firebaseapp.com",
@@ -91,7 +91,7 @@ function initDashboard() {
     // Start fetching data immediately
     fetchData();
     
-    // Set up auto-refresh every 10 seconds (for real-time updates)
+    // Set up auto-refresh every 10 seconds
     setInterval(fetchData, 10000);
     
     // Update simulated data every minute
@@ -113,8 +113,7 @@ function generateInitialData() {
         minuteData.push({
             timestamp: timestamp,
             moisture: moisture,
-            temperature: 22 + Math.sin(i * 0.05) * 2 + (Math.random() * 1 - 0.5),
-            humidity: 45 + Math.sin(i * 0.08) * 8 + (Math.random() * 2 - 1)
+            rawValue: 4095 - (moisture * 30)  // Simulated raw value
         });
     }
     
@@ -127,8 +126,7 @@ function generateInitialData() {
         hourData.push({
             timestamp: timestamp,
             moisture: moisture,
-            temperature: 22 + Math.sin(i * 0.2) * 3,
-            humidity: 45 + Math.sin(i * 0.3) * 10
+            rawValue: 4095 - (moisture * 30)
         });
     }
     
@@ -141,8 +139,7 @@ function generateInitialData() {
         dayData.push({
             timestamp: timestamp,
             moisture: moisture,
-            temperature: 22 + Math.sin(i * 0.5) * 4,
-            humidity: 45 + Math.sin(i * 0.7) * 15
+            rawValue: 4095 - (moisture * 30)
         });
     }
     
@@ -161,8 +158,7 @@ function generateInitialData() {
         plantRecords.push({
             timestamp: timestamp.toLocaleString(),
             moistureLevel: moisture,
-            temperature: 22 + Math.sin(i * 0.3) * 3 + (Math.random() * 2 - 1),
-            humidity: 45 + Math.sin(i * 0.4) * 10 + (Math.random() * 5 - 2.5),
+            sensorValue: Math.round(4095 - (moisture * 30)),
             status: status
         });
     }
@@ -228,12 +224,11 @@ function updateRecordsTable() {
             moistureColorClass = 'moisture-high';
         }
         
-        // Create row HTML
+        // Create row HTML (NO temperature/humidity columns)
         row.innerHTML = `
             <td class="timestamp-col">${record.timestamp}</td>
             <td class="percent-col ${moistureColorClass}">${record.moistureLevel.toFixed(1)}%</td>
-            <td class="value-col">${record.temperature.toFixed(1)}°C</td>
-            <td class="percent-col">${record.humidity.toFixed(1)}%</td>
+            <td class="value-col">${record.sensorValue || 0}</td>
             <td class="status-col">
                 <span class="status-badge ${statusClass}">${record.status}</span>
             </td>
@@ -554,8 +549,7 @@ function updateData() {
     minuteData.push({
         timestamp: now,
         moisture: newMinuteMoisture,
-        temperature: 22 + Math.sin(minuteData.length * 0.05) * 2,
-        humidity: 45 + Math.sin(minuteData.length * 0.08) * 8
+        rawValue: 4095 - (newMinuteMoisture * 30)
     });
     
     // Keep only last 60 minutes
@@ -585,7 +579,7 @@ function updateGauge(percentage) {
     if (moistureGauge) {
         moistureGauge.data.datasets[0].data = [percentage, 100 - percentage];
         
-        // Set color based on moisture level (using your specified thresholds)
+        // Set color based on moisture level
         let color;
         if (percentage <= 30) {
             color = '#e74c3c'; // Red for NEED WATER
@@ -626,8 +620,7 @@ function addNewRecord(data) {
     const newRecord = {
         timestamp: now.toLocaleString(),
         moistureLevel: percentage,
-        temperature: data.temperature || 0,
-        humidity: data.humidity || 0,
+        sensorValue: data.moisture_value || 0,
         status: status
     };
     
@@ -646,8 +639,7 @@ function addNewRecord(data) {
     minuteData.push({
         timestamp: now,
         moisture: percentage,
-        temperature: data.temperature || 0,
-        humidity: data.humidity || 0
+        rawValue: data.moisture_value || 0
     });
     
     // Keep only last 60 minutes
@@ -679,7 +671,7 @@ function updateUI(data) {
     elements.percentageLarge.textContent = `${percentage.toFixed(1)}%`;
     elements.plantStatusText.textContent = statusText;
     
-    // Set status class based on percentage (using your specified thresholds)
+    // Set status class based on percentage
     if (percentage <= 30) {
         elements.plantStatusText.className = 'plant-status-text status-need-water';
     } else if (percentage <= 70) {
@@ -691,9 +683,9 @@ function updateUI(data) {
     // Update warning banner
     updateWarningBanner(percentage);
     
-    // Update environment data
-    elements.temperature.textContent = data.temperature ? `${data.temperature.toFixed(1)}` : '--';
-    elements.humidity.textContent = data.humidity ? `${data.humidity.toFixed(1)}` : '--';
+    // Update sensor data - NO temperature/humidity
+    elements.temperature.textContent = 'N/A';
+    elements.humidity.textContent = 'N/A';
     elements.rawValue.textContent = rawValue;
     
     // Update counters
@@ -714,7 +706,6 @@ function updateUI(data) {
         currentDeviceId = data.device_id;
         elements.deviceId.textContent = currentDeviceId;
         localStorage.setItem('plantDeviceId', currentDeviceId);
-        console.log("Updated device ID to:", currentDeviceId);
     }
     
     // Update plant info if available
@@ -790,9 +781,6 @@ function showDemoData() {
         moisture_value: rawValue,
         moisture_percent: percentage,
         moisture_status: status,
-        temperature: 22 + Math.random() * 5,
-        humidity: 40 + Math.random() * 30,
-        timestamp: Date.now(),
         plant_name: 'My Indoor Plant',
         plant_type: 'Snake Plant',
         plant_location: 'Living Room • Window Side'
