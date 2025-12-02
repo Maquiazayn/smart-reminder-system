@@ -1,5 +1,5 @@
-// dashboard.js - Smart Plant Watering Dashboard
-// WORKING VERSION
+// dashboard.js - Smart Plant Watering Dashboard - FIXED VERSION
+// UPDATED: 10-SECOND REFRESH WITH FIXED HTML IDs
 
 const FIREBASE_CONFIG = {
   databaseURL: "https://smart-plant-watering-e2811-default-rtdb.firebaseio.com"
@@ -13,6 +13,7 @@ const MAX_HISTORY = 60;
 let realRecords = [];
 let currentData = null;
 
+// FIXED: Ensure all elements exist
 const elements = {
     moisturePercent: document.getElementById('moisturePercent'),
     statusIndicator: document.getElementById('statusIndicator'),
@@ -26,8 +27,12 @@ const elements = {
     recordCount: document.getElementById('recordCount')
 };
 
+// Debug log to check elements
+console.log("📋 Checking HTML elements:", elements);
+
 let moistureGauge = null;
 let historyChart = null;
+let countdownInterval = null;
 
 function showLoading(show) {
     const loadingOverlay = document.getElementById('loadingOverlay');
@@ -39,60 +44,100 @@ function showLoading(show) {
 document.addEventListener('DOMContentLoaded', initDashboard);
 
 function initDashboard() {
+    console.log("🚀 Dashboard initialization started...");
     showLoading(true);
-    console.log("🌱 Dashboard starting...");
     
-    initializeGauge();
-    initializeHistoryChart();
+    // Check if chart canvases exist
+    const gaugeCanvas = document.getElementById('moistureGauge');
+    const historyCanvas = document.getElementById('historyChart');
     
+    if (!gaugeCanvas) console.error("❌ Missing: moistureGauge canvas");
+    if (!historyCanvas) console.error("❌ Missing: historyChart canvas");
+    
+    if (gaugeCanvas) initializeGauge();
+    if (historyCanvas) initializeHistoryChart();
+    
+    // Get device ID
     const urlParams = new URLSearchParams(window.location.search);
     currentDeviceId = urlParams.get('device') || localStorage.getItem('plantDeviceId') || 'PLANT-SENSOR-001';
     
-    elements.deviceId.textContent = currentDeviceId;
+    // Update device ID display
+    if (elements.deviceId) {
+        elements.deviceId.textContent = currentDeviceId;
+    }
     localStorage.setItem('plantDeviceId', currentDeviceId);
     
+    // Immediate first fetch
     fetchData();
-    setInterval(fetchData, 60000);
-    setInterval(fetchHistoryData, 300000);
     
-    document.querySelector('.refresh-btn').addEventListener('click', fetchData);
+    // Set 10-second interval
+    setInterval(fetchData, 10000);
+    
+    // Setup refresh button
+    const refreshBtn = document.querySelector('.refresh-btn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            fetchData();
+            showNotification("Manual refresh triggered");
+        });
+    } else {
+        console.warn("⚠️ Refresh button not found");
+    }
+    
+    // Setup export button
+    const exportBtn = document.getElementById('exportBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', exportToCSV);
+    }
+    
     fetchHistoryData();
     startCountdownTimer();
+    
+    console.log("✅ Dashboard initialized");
 }
 
 function startCountdownTimer() {
-    let countdown = 60;
-    const countdownElement = document.getElementById('countdownTimer');
+    // Clear existing timer if any
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+    }
+    
+    let countdown = 10;
+    let countdownElement = document.getElementById('countdownTimer');
     
     if (!countdownElement) {
-        const lastUpdateElement = elements.lastUpdate.parentElement;
+        const lastUpdateElement = elements.lastUpdate ? elements.lastUpdate.parentElement : null;
         if (lastUpdateElement) {
-            const timerSpan = document.createElement('div');
-            timerSpan.id = 'countdownTimer';
-            timerSpan.style.marginTop = '5px';
-            timerSpan.style.fontSize = '0.85rem';
-            timerSpan.style.color = '#667eea';
-            timerSpan.style.fontWeight = '500';
-            timerSpan.textContent = `Next refresh in: ${countdown} seconds`;
-            lastUpdateElement.appendChild(timerSpan);
-            
-            setInterval(() => {
-                countdown--;
-                if (countdown <= 0) {
-                    countdown = 60;
-                }
-                timerSpan.textContent = `Next refresh in: ${countdown} seconds`;
-                timerSpan.style.color = countdown <= 10 ? '#ff6b6b' : '#667eea';
-            }, 1000);
+            countdownElement = document.createElement('div');
+            countdownElement.id = 'countdownTimer';
+            countdownElement.style.marginTop = '5px';
+            countdownElement.style.fontSize = '0.85rem';
+            countdownElement.style.color = '#667eea';
+            countdownElement.style.fontWeight = '500';
+            countdownElement.textContent = `Next refresh in: ${countdown} seconds`;
+            lastUpdateElement.appendChild(countdownElement);
         }
+    }
+    
+    if (countdownElement) {
+        countdownInterval = setInterval(() => {
+            countdown--;
+            if (countdown <= 0) {
+                countdown = 10;
+                fetchData();  // Auto fetch when countdown reaches 0
+            }
+            countdownElement.textContent = `Next refresh in: ${countdown} seconds`;
+            countdownElement.style.color = countdown <= 3 ? '#ff6b6b' : '#667eea';
+        }, 1000);
     }
 }
 
 async function fetchHistoryData() {
-    console.log("📚 Getting history...");
+    console.log("📚 Fetching history data...");
     
     try {
-        const url = `${FIREBASE_CONFIG.databaseURL}/plants/${currentDeviceId}/history.json?orderBy="timestamp"&limitToLast=50`;
+        const timestamp = new Date().getTime();
+        const url = `${FIREBASE_CONFIG.databaseURL}/plants/${currentDeviceId}/history.json?orderBy="timestamp"&limitToLast=50&t=${timestamp}`;
         
         const response = await fetch(url);
         
@@ -166,7 +211,7 @@ function addCurrentDataToRecords(currentData) {
     
     const isDuplicate = realRecords.some(record => {
         const timeDiff = Math.abs(record.sortKey - currentRecord.sortKey);
-        return timeDiff < 60000;
+        return timeDiff < 5000;
     });
     
     if (!isDuplicate) {
@@ -181,13 +226,14 @@ function addCurrentDataToRecords(currentData) {
 function updateHistoryChartWithRealData() {
     if (!historyChart || realRecords.length === 0) return;
     
-    const chartData = realRecords.slice(0, 60).reverse();
+    const chartData = realRecords.slice(0, 30).reverse();
     
     const labels = chartData.map(record => {
         const date = new Date(record.sortKey);
         return date.toLocaleTimeString([], {
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
+            second: '2-digit'
         });
     });
     
@@ -201,6 +247,11 @@ function updateHistoryChartWithRealData() {
 function updateRecordsTable(records = []) {
     const tableBody = elements.recordsTableBody;
     
+    if (!tableBody) {
+        console.error("❌ Missing: recordsTableBody element");
+        return;
+    }
+    
     const recordsToShow = records.length > 0 ? records.slice(0, 10) : 
                          (realRecords.length > 0 ? realRecords.slice(0, 10) : getDemoRecords());
     
@@ -213,7 +264,9 @@ function updateRecordsTable(records = []) {
                 </td>
             </tr>
         `;
-        elements.recordCount.textContent = '0';
+        if (elements.recordCount) {
+            elements.recordCount.textContent = '0';
+        }
         return;
     }
     
@@ -246,7 +299,7 @@ function updateRecordsTable(records = []) {
                 hour: '2-digit',
                 minute: '2-digit',
                 second: '2-digit'
-            }) + ' ' + date.toLocaleDateString();
+            });
         }
         
         row.innerHTML = `
@@ -262,15 +315,17 @@ function updateRecordsTable(records = []) {
         tableBody.appendChild(row);
     });
     
-    elements.recordCount.textContent = recordsToShow.length;
+    if (elements.recordCount) {
+        elements.recordCount.textContent = recordsToShow.length;
+    }
 }
 
 function getDemoRecords() {
     const demoRecords = [];
     const now = new Date();
     
-    for (let i = 0; i < 7; i++) {
-        const time = new Date(now.getTime() - (i * 60000));
+    for (let i = 0; i < 5; i++) {
+        const time = new Date(now.getTime() - (i * 10000));
         const moisture = 30 + Math.random() * 50;
         const status = getStatusText(moisture);
         
@@ -311,6 +366,8 @@ function initializeGauge() {
             }
         }
     });
+    
+    console.log("✅ Gauge initialized");
 }
 
 function initializeHistoryChart() {
@@ -339,7 +396,7 @@ function initializeHistoryChart() {
                 legend: { display: false },
                 title: {
                     display: true,
-                    text: 'Last 60 Minutes',
+                    text: 'Last 5 Minutes (10s updates)',
                     color: '#4a5568',
                     font: {
                         size: 14,
@@ -367,13 +424,15 @@ function initializeHistoryChart() {
                     grid: { display: false },
                     title: {
                         display: true,
-                        text: 'Time',
+                        text: 'Time (10s intervals)',
                         color: '#4a5568'
                     }
                 }
             }
         }
     });
+    
+    console.log("✅ History chart initialized");
 }
 
 function updateGauge(percentage) {
@@ -398,12 +457,13 @@ function updateHistoryChart(percentage, timestamp) {
     if (historyChart) {
         const timeLabel = new Date(timestamp).toLocaleTimeString([], {
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
+            second: '2-digit'
         });
         
         moistureHistory.push({percentage, time: timeLabel});
         
-        if (moistureHistory.length > MAX_HISTORY) {
+        if (moistureHistory.length > 30) {
             moistureHistory.shift();
         }
         
@@ -426,10 +486,10 @@ function getStatusText(percentage) {
 }
 
 function updateUI(data) {
-    console.log("🔄 Updating UI:", data);
+    console.log("🔄 Updating UI with data:", data);
     
     if (!data) {
-        console.warn("No data");
+        console.warn("No data received");
         return;
     }
     
@@ -440,17 +500,34 @@ function updateUI(data) {
     const status = data.status || getStatusText(percentage);
     const statusClass = getStatusClass(percentage);
     
-    elements.moisturePercent.textContent = `${percentage.toFixed(1)}%`;
-    elements.statusIndicator.textContent = status;
-    elements.statusIndicator.className = `status-indicator ${statusClass}`;
+    // Update main values
+    if (elements.moisturePercent) {
+        elements.moisturePercent.textContent = `${percentage.toFixed(1)}%`;
+    }
     
-    elements.temperature.textContent = data.temperature ? `${data.temperature.toFixed(1)}°C` : '--°C';
-    elements.humidity.textContent = data.humidity ? `${data.humidity.toFixed(1)}%` : '--%';
-    elements.rawValue.textContent = rawValue;
+    if (elements.statusIndicator) {
+        elements.statusIndicator.textContent = status;
+        elements.statusIndicator.className = `status-indicator ${statusClass}`;
+    }
+    
+    if (elements.temperature) {
+        elements.temperature.textContent = data.temperature ? `${data.temperature.toFixed(1)}°C` : '--°C';
+    }
+    
+    if (elements.humidity) {
+        elements.humidity.textContent = data.humidity ? `${data.humidity.toFixed(1)}%` : '--%';
+    }
+    
+    if (elements.rawValue) {
+        elements.rawValue.textContent = rawValue;
+    }
     
     updateCount++;
-    elements.updateCount.textContent = updateCount;
+    if (elements.updateCount) {
+        elements.updateCount.textContent = updateCount;
+    }
     
+    // Update timestamp
     let timestamp;
     if (data.timestamp && typeof data.timestamp === 'string') {
         timestamp = data.timestamp;
@@ -469,11 +546,16 @@ function updateUI(data) {
         });
     }
     
-    elements.lastUpdate.textContent = timestamp;
+    if (elements.lastUpdate) {
+        elements.lastUpdate.textContent = timestamp;
+    }
     
+    // Update device ID if changed
     if (data.device_id && data.device_id !== currentDeviceId) {
         currentDeviceId = data.device_id;
-        elements.deviceId.textContent = currentDeviceId;
+        if (elements.deviceId) {
+            elements.deviceId.textContent = currentDeviceId;
+        }
         localStorage.setItem('plantDeviceId', currentDeviceId);
         console.log("Device updated to:", currentDeviceId);
     }
@@ -484,15 +566,17 @@ function updateUI(data) {
     addCurrentDataToRecords(data);
     updateRecordsTable(realRecords);
     
-    console.log("✅ UI Updated:", status, percentage.toFixed(1) + "%");
+    console.log("✅ UI Updated - Status:", status, "Moisture:", percentage.toFixed(1) + "%");
 }
 
 async function fetchData() {
-    console.log(`🔍 Getting data for: ${currentDeviceId}`);
+    console.log(`🔍 Fetching data for device: ${currentDeviceId}`);
     
     try {
-        const url = `${FIREBASE_CONFIG.databaseURL}/plants/${currentDeviceId}/latest.json`;
+        const timestamp = new Date().getTime();
+        const url = `${FIREBASE_CONFIG.databaseURL}/plants/${currentDeviceId}/latest.json?t=${timestamp}`;
         
+        console.log("URL:", url);
         const response = await fetch(url);
         
         if (!response.ok) {
@@ -500,9 +584,10 @@ async function fetchData() {
         }
         
         const data = await response.json();
+        console.log("Raw Firebase response:", data);
         
         if (data === null) {
-            console.warn("No data found");
+            console.warn("No data found in Firebase");
             showDemoData();
             showLoading(false);
             return;
@@ -512,19 +597,23 @@ async function fetchData() {
         showLoading(false);
         
     } catch (error) {
-        console.error('Error getting data:', error);
+        console.error('❌ Error fetching data:', error);
         showLoading(false);
         
-        elements.moisturePercent.textContent = 'ERROR';
-        elements.statusIndicator.textContent = 'CONNECTION FAILED';
-        elements.statusIndicator.className = 'status-indicator status-need-water';
+        if (elements.moisturePercent) {
+            elements.moisturePercent.textContent = 'ERROR';
+        }
+        if (elements.statusIndicator) {
+            elements.statusIndicator.textContent = 'CONNECTION FAILED';
+            elements.statusIndicator.className = 'status-indicator status-need-water';
+        }
         
         showDemoData();
     }
 }
 
 function showDemoData() {
-    console.log("Showing demo data");
+    console.log("⚠️ Showing demo data");
     
     const rawValue = Math.floor(Math.random() * 4096);
     const percentage = 40 + Math.random() * 30;
@@ -547,8 +636,12 @@ function showDemoData() {
     
     updateUI(demoData);
     
-    elements.deviceId.textContent = currentDeviceId + ' (DEMO)';
-    elements.rawValue.textContent = rawValue + ' (DEMO)';
+    if (elements.deviceId) {
+        elements.deviceId.textContent = currentDeviceId + ' (DEMO)';
+    }
+    if (elements.rawValue) {
+        elements.rawValue.textContent = rawValue + ' (DEMO)';
+    }
     
     if (realRecords.length === 0) {
         updateRecordsTable();
@@ -616,11 +709,12 @@ function showNotification(message) {
         right: 20px;
         background: #51cf66;
         color: white;
-        padding: 15px 20px;
+        padding: 12px 18px;
         border-radius: 8px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         z-index: 1000;
         font-weight: 500;
+        font-size: 0.9rem;
     `;
     
     notification.textContent = message;
@@ -630,16 +724,19 @@ function showNotification(message) {
         if (notification.parentNode) {
             document.body.removeChild(notification);
         }
-    }, 3000);
+    }, 2000);
 }
 
+// Auto-refresh when page becomes visible
 document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
+        console.log("Page visible, refreshing data...");
         fetchData();
         fetchHistoryData();
     }
 });
 
+// Make functions available globally
 window.fetchData = fetchData;
 window.refreshRecords = refreshRecords;
 window.exportToCSV = exportToCSV;
