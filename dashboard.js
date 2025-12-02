@@ -7,7 +7,7 @@ const FIREBASE_CONFIG = {
 };
 
 // Global variables
-let currentDeviceId = 'PLANT-SENSOR-002';  // MUST MATCH ARDUINO
+let currentDeviceId = 'PLANT-SENSOR-001';  // MUST MATCH ARDUINO
 let updateCount = 0;
 let moistureHistory = [];
 const MAX_HISTORY = 60;
