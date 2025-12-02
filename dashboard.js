@@ -60,7 +60,7 @@ function initDashboard() {
     
     // Get device ID from URL or localStorage
     const urlParams = new URLSearchParams(window.location.search);
-    currentDeviceId = urlParams.get('device') || localStorage.getItem('plantDeviceId') || 'PLANT-SENSOR-001';
+    currentDeviceId = urlParams.get('device') || localStorage.getItem('plantDeviceId') || 'PLANT-SENSOR-002';
     
     // Set device ID in UI
     elements.deviceId.textContent = currentDeviceId;
@@ -601,8 +601,8 @@ function showDemoData() {
     updateUI(demoData);
     
     // Update UI to indicate demo mode
-    elements.deviceId.textContent = currentDeviceId + ' (DEMO)';
-    elements.rawValue.textContent = rawValue + ' (DEMO)';
+    elements.deviceId.textContent = currentDeviceId + ' (PLANT-SENSOR-002)';
+    elements.rawValue.textContent = rawValue + ' (PLANT-SENSOR-002)';
     
     // Also update records table with demo data
     if (realRecords.length === 0) {
