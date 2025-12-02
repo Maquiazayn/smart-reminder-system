@@ -590,13 +590,13 @@ function updateWarningBanner(percentage) {
 // Add new record to history
 function addNewRecord(data) {
     const now = new Date();
-    const percentage = data.moisture_percent || 0;
-    const status = data.moisture_status || "OK";
+    const percentage = data.moisture || 0;           // Gamitin 'moisture' key
+    const status = data.moistureStatus || "OK";      // Gamitin 'moistureStatus' key
     
     const newRecord = {
         timestamp: now.toLocaleString(),
         moistureLevel: percentage,
-        sensorValue: data.moisture_value || 0,
+        sensorValue: data.rawValue || 0,            // Gamitin 'rawValue' key
         status: status
     };
     
@@ -621,9 +621,15 @@ function updateUI(data) {
         return;
     }
     
-    const percentage = data.moisture_percent || 0;
-    const rawValue = data.moisture_value || 0;
-    const statusText = data.moisture_status || "OK";
+    // Gamitin ang ACTUAL keys from your Firebase
+    const percentage = data.moisture || 0;           // 'moisture' hindi 'moisture_percent'
+    const rawValue = data.rawValue || 0;            // 'rawValue' hindi 'moisture_value'
+    let statusText = data.moistureStatus || "OK";   // 'moistureStatus' hindi 'moisture_status'
+    
+    // Fix typo in status if needed
+    if (statusText === "TOW WET") {
+        statusText = "TOO WET";
+    }
     
     // Update main display elements
     elements.moisturePercent.textContent = `${percentage.toFixed(1)}`;
@@ -642,9 +648,9 @@ function updateUI(data) {
     // Update warning banner
     updateWarningBanner(percentage);
     
-    // Update sensor data
-    elements.temperature.textContent = 'N/A';
-    elements.humidity.textContent = 'N/A';
+    // Update sensor data - gamitin ang actual keys
+    elements.temperature.textContent = data.temperature || 'N/A';
+    elements.humidity.textContent = data.humidity || 'N/A';
     elements.rawValue.textContent = rawValue;
     
     // Update counters
@@ -652,13 +658,17 @@ function updateUI(data) {
     elements.updateCount.textContent = updateCount;
     elements.refreshStatus.textContent = 'Updated just now';
     
-    // Update timestamp
-    const now = new Date();
-    elements.lastUpdate.textContent = now.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    });
+    // Update timestamp - gamitin ang lastUpdate from Firebase
+    if (data.lastUpdate) {
+        elements.lastUpdate.textContent = data.lastUpdate;
+    } else {
+        const now = new Date();
+        elements.lastUpdate.textContent = now.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    }
     
     // Update device ID if available
     if (data.device_id && data.device_id !== currentDeviceId) {
@@ -734,11 +744,19 @@ function showDemoData() {
     const percentage = 40 + Math.random() * 30;
     const status = percentage <= 30 ? "NEED WATER" : percentage <= 70 ? "OK" : "TOO WET";
     
+    // Gamitin ang ACTUAL keys from your Firebase structure
     const demoData = {
         device_id: currentDeviceId,
-        moisture_value: rawValue,
-        moisture_percent: percentage,
-        moisture_status: status,
+        rawValue: rawValue,               // 'rawValue' hindi 'moisture_value'
+        moisture: percentage,              // 'moisture' hindi 'moisture_percent'
+        moistureStatus: status,           // 'moistureStatus' hindi 'moisture_status'
+        temperature: 25,
+        humidity: 50,
+        lastUpdate: new Date().toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            second: '2-digit'
+        }),
         plant_name: 'My Indoor Plant',
         plant_type: 'Snake Plant',
         plant_location: 'Living Room • Window Side'
