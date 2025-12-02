@@ -1,8 +1,7 @@
-
 // dashboard.js - Smart Plant Watering Dashboard
-// UPDATED TO MATCH YOUR FIREBASE PROJECT
+// FIXED WITH DEVICE MATCHING
 
-// CORRECT Firebase configuration - match this with your database
+// Firebase configuration
 const FIREBASE_CONFIG = {
   databaseURL: "https://smart-plant-watering-e2811-default-rtdb.firebaseio.com"
 };
@@ -11,10 +10,11 @@ const FIREBASE_CONFIG = {
 let currentDeviceId = null;
 let updateCount = 0;
 let moistureHistory = [];
-const MAX_HISTORY = 60; // 60 data points (1 hour at 1-minute intervals)
+const MAX_HISTORY = 60;
 
 // This will store real records from Firebase
 let realRecords = [];
+let currentData = null;
 
 // DOM Elements
 const elements = {
@@ -27,7 +27,8 @@ const elements = {
     deviceId: document.getElementById('deviceId'),
     lastUpdate: document.getElementById('lastUpdate'),
     recordsTableBody: document.getElementById('recordsTableBody'),
-    recordCount: document.getElementById('recordCount')
+    recordCount: document.getElementById('recordCount'),
+    deviceSelect: document.getElementById('deviceSelect')
 };
 
 // Chart instances
@@ -60,14 +61,16 @@ function initDashboard() {
     
     // Get device ID from URL or localStorage
     const urlParams = new URLSearchParams(window.location.search);
-    currentDeviceId = urlParams.get('device') || localStorage.getItem('plantDeviceId') || 'PLANT-SENSOR-002';
+    currentDeviceId = urlParams.get('device') || localStorage.getItem('plantDeviceId') || 'PLANT-SENSOR-001';
     
     // Set device ID in UI
     elements.deviceId.textContent = currentDeviceId;
     localStorage.setItem('plantDeviceId', currentDeviceId);
     
-    // Set interval text in UI
-    updateIntervalText();
+    // Set device select value
+    if (elements.deviceSelect) {
+        elements.deviceSelect.value = currentDeviceId;
+    }
     
     // Start fetching data
     fetchData();
@@ -89,34 +92,51 @@ function initDashboard() {
     
     console.log("Dashboard initialized for device:", currentDeviceId);
     console.log("Auto-refresh interval: 60 seconds (1 minute)");
+    console.log("Thresholds: 0-30% = NEED WATER, 31-70% = OK, 71-100% = TOO WET");
 }
 
-// Update interval text in UI
-function updateIntervalText() {
-    const intervalElement = document.getElementById('refreshInterval');
-    if (!intervalElement) {
-        // Create interval display if it doesn't exist
-        const header = document.querySelector('.header p');
-        if (header) {
-            const intervalSpan = document.createElement('span');
-            intervalSpan.id = 'refreshInterval';
-            intervalSpan.style.display = 'block';
-            intervalSpan.style.marginTop = '5px';
-            intervalSpan.style.fontSize = '0.9rem';
-            intervalSpan.style.opacity = '0.8';
-            intervalSpan.textContent = 'Auto-refresh: 60 seconds';
-            header.appendChild(intervalSpan);
+// Change device function
+function changeDevice() {
+    const select = elements.deviceSelect;
+    if (!select) {
+        console.error("Device select element not found");
+        return;
+    }
+    
+    const newDeviceId = select.value;
+    if (newDeviceId && newDeviceId !== currentDeviceId) {
+        console.log(`Changing device from ${currentDeviceId} to ${newDeviceId}`);
+        
+        currentDeviceId = newDeviceId;
+        localStorage.setItem('plantDeviceId', currentDeviceId);
+        elements.deviceId.textContent = currentDeviceId;
+        
+        // Clear old data
+        realRecords = [];
+        currentData = null;
+        moistureHistory = [];
+        
+        // Update refresh button text
+        const refreshBtn = document.querySelector('.refresh-btn');
+        if (refreshBtn) {
+            refreshBtn.innerHTML = `<i class="fas fa-sync-alt"></i> Refresh Data (Device: ${currentDeviceId})`;
         }
+        
+        // Refresh all data
+        showLoading(true);
+        fetchData();
+        fetchHistoryData();
+        
+        showNotification(`Switched to device: ${currentDeviceId}`);
     }
 }
 
 // Start countdown timer for next refresh
 function startCountdownTimer() {
-    let countdown = 60; // 60 seconds
+    let countdown = 60;
     const countdownElement = document.getElementById('countdownTimer');
     
     if (!countdownElement) {
-        // Create countdown display
         const lastUpdateElement = elements.lastUpdate.parentElement;
         if (lastUpdateElement) {
             const timerSpan = document.createElement('div');
@@ -128,7 +148,6 @@ function startCountdownTimer() {
             timerSpan.textContent = `Next refresh in: ${countdown} seconds`;
             lastUpdateElement.appendChild(timerSpan);
             
-            // Update countdown every second
             setInterval(() => {
                 countdown--;
                 if (countdown <= 0) {
@@ -143,11 +162,10 @@ function startCountdownTimer() {
 
 // Fetch history data from Firebase
 async function fetchHistoryData() {
-    console.log("Fetching history data...");
+    console.log("Fetching history data for device:", currentDeviceId);
     
     try {
         const url = `${FIREBASE_CONFIG.databaseURL}/plants/${currentDeviceId}/history.json?orderBy="timestamp"&limitToLast=50`;
-        console.log("Fetching history from URL:", url);
         
         const response = await fetch(url);
         
@@ -158,8 +176,11 @@ async function fetchHistoryData() {
         const data = await response.json();
         
         if (data === null) {
-            console.warn("No history data found");
-            updateRecordsTable(); // Show demo data
+            console.warn("No history data found for device:", currentDeviceId);
+            if (currentData) {
+                addCurrentDataToRecords(currentData);
+            }
+            updateRecordsTable();
             return;
         }
         
@@ -168,7 +189,6 @@ async function fetchHistoryData() {
         for (const key in data) {
             if (data.hasOwnProperty(key)) {
                 const record = data[key];
-                // Convert timestamp to readable format
                 let timestamp;
                 if (record.timestamp && typeof record.timestamp === 'string') {
                     timestamp = record.timestamp;
@@ -187,18 +207,55 @@ async function fetchHistoryData() {
         // Sort by timestamp (newest first)
         realRecords.sort((a, b) => b.sortKey - a.sortKey);
         
-        // Keep only last 10 records for table
-        const recordsForTable = realRecords.slice(0, 10);
+        // ADD CURRENT DATA AS FIRST RECORD IF IT'S NOT ALREADY THERE
+        if (currentData) {
+            addCurrentDataToRecords(currentData);
+        }
         
         // Update the records table
-        updateRecordsTable(recordsForTable);
+        updateRecordsTable(realRecords);
         
         // Update history chart with more data points
         updateHistoryChartWithRealData();
         
     } catch (error) {
         console.error('Error fetching history data:', error);
-        updateRecordsTable(); // Show demo data on error
+        if (currentData) {
+            addCurrentDataToRecords(currentData);
+        }
+        updateRecordsTable();
+    }
+}
+
+// Add current data to records array
+function addCurrentDataToRecords(currentData) {
+    if (!currentData) return;
+    
+    const now = new Date();
+    const currentRecord = {
+        formattedTimestamp: now.toLocaleString(),
+        moisture_percent: currentData.moisture_percent || 0,
+        temperature: currentData.temperature || 22.5,
+        humidity: currentData.humidity || 45.0,
+        status: currentData.status || getStatusText(currentData.moisture_percent || 0),
+        sortKey: now.getTime(),
+        timestamp: now.toISOString(),
+        device_id: currentDeviceId,
+        raw_value: currentData.raw_value || currentData.moisture_value || 0
+    };
+    
+    // Check if this record already exists (within last 1 minute)
+    const isDuplicate = realRecords.some(record => {
+        const timeDiff = Math.abs(record.sortKey - currentRecord.sortKey);
+        return timeDiff < 60000;
+    });
+    
+    if (!isDuplicate) {
+        realRecords.unshift(currentRecord);
+        
+        if (realRecords.length > 50) {
+            realRecords = realRecords.slice(0, 50);
+        }
     }
 }
 
@@ -206,8 +263,7 @@ async function fetchHistoryData() {
 function updateHistoryChartWithRealData() {
     if (!historyChart || realRecords.length === 0) return;
     
-    // Get last 60 records for chart (1 hour of data at 1-minute intervals)
-    const chartData = realRecords.slice(0, 60).reverse(); // Reverse to show oldest to newest
+    const chartData = realRecords.slice(0, 60).reverse();
     
     const labels = chartData.map(record => {
         const date = new Date(record.sortKey);
@@ -228,8 +284,7 @@ function updateHistoryChartWithRealData() {
 function updateRecordsTable(records = []) {
     const tableBody = elements.recordsTableBody;
     
-    // Use provided records or realRecords or demo data
-    const recordsToShow = records.length > 0 ? records : 
+    const recordsToShow = records.length > 0 ? records.slice(0, 10) : 
                          (realRecords.length > 0 ? realRecords.slice(0, 10) : getDemoRecords());
     
     if (recordsToShow.length === 0) {
@@ -247,30 +302,26 @@ function updateRecordsTable(records = []) {
     
     tableBody.innerHTML = '';
     
-    // Populate table rows
     recordsToShow.forEach(record => {
         const row = document.createElement('tr');
         
-        // Get moisture percentage
         const moisture = record.moisture_percent || record.moistureLevel || 0;
         const status = record.status || getStatusText(moisture);
         
-        // Determine status badge class and color for moisture level
         let statusClass = '';
         let moistureColorClass = '';
         
-        if (status.includes("DRY") || status.includes("NEED WATER")) {
+        if (status.includes("NEED WATER")) {
             statusClass = 'status-need-water-badge';
             moistureColorClass = 'water-level-low';
-        } else if (status.includes("OK") || status.includes("MOIST")) {
+        } else if (status.includes("OK")) {
             statusClass = 'status-ok-badge';
             moistureColorClass = 'water-level-ok';
-        } else {
+        } else if (status.includes("TOO WET")) {
             statusClass = 'status-too-wet-badge';
             moistureColorClass = 'water-level-high';
         }
         
-        // Format timestamp for table
         let displayTime = '--';
         if (record.formattedTimestamp) {
             const date = new Date(record.sortKey || Date.now());
@@ -281,7 +332,6 @@ function updateRecordsTable(records = []) {
             }) + ' ' + date.toLocaleDateString();
         }
         
-        // Create row HTML matching your table format
         row.innerHTML = `
             <td class="timestamp-col">${displayTime}</td>
             <td class="percent-col ${moistureColorClass}">${moisture.toFixed(1)}%</td>
@@ -295,7 +345,6 @@ function updateRecordsTable(records = []) {
         tableBody.appendChild(row);
     });
     
-    // Update record count
     elements.recordCount.textContent = recordsToShow.length;
 }
 
@@ -305,7 +354,7 @@ function getDemoRecords() {
     const now = new Date();
     
     for (let i = 0; i < 7; i++) {
-        const time = new Date(now.getTime() - (i * 60000)); // Each record 1 minute apart
+        const time = new Date(now.getTime() - (i * 60000));
         const moisture = 30 + Math.random() * 50;
         const status = getStatusText(moisture);
         
@@ -422,7 +471,6 @@ function updateGauge(percentage) {
     if (moistureGauge) {
         moistureGauge.data.datasets[0].data = [percentage, 100 - percentage];
         
-        // Set color based on moisture level
         let color;
         if (percentage <= 30) {
             color = '#ff6b6b';
@@ -480,6 +528,9 @@ function updateUI(data) {
         return;
     }
     
+    // Store current data
+    currentData = data;
+    
     const percentage = data.moisture_percent || 0;
     const rawValue = data.raw_value || data.moisture_value || 0;
     const status = data.status || getStatusText(percentage);
@@ -499,7 +550,7 @@ function updateUI(data) {
     updateCount++;
     elements.updateCount.textContent = updateCount;
     
-    // Update timestamp - use data timestamp if available
+    // Update timestamp
     let timestamp;
     if (data.timestamp && typeof data.timestamp === 'string') {
         timestamp = data.timestamp;
@@ -525,6 +576,9 @@ function updateUI(data) {
         currentDeviceId = data.device_id;
         elements.deviceId.textContent = currentDeviceId;
         localStorage.setItem('plantDeviceId', currentDeviceId);
+        if (elements.deviceSelect) {
+            elements.deviceSelect.value = currentDeviceId;
+        }
         console.log("Updated device ID to:", currentDeviceId);
     }
     
@@ -532,7 +586,14 @@ function updateUI(data) {
     updateGauge(percentage);
     updateHistoryChart(percentage, Date.now());
     
+    // ADD CURRENT DATA TO RECORDS TABLE IMMEDIATELY
+    addCurrentDataToRecords(data);
+    updateRecordsTable(realRecords);
+    
     console.log("UI updated successfully");
+    console.log("Current status:", status, "(" + percentage.toFixed(1) + "%)");
+    console.log("Threshold applied:", getStatusText(percentage));
+    console.log("Records count:", realRecords.length);
 }
 
 // Fetch data from Firebase
@@ -567,12 +628,10 @@ async function fetchData() {
         console.error('Error fetching data:', error);
         showLoading(false);
         
-        // Show connection error in UI
         elements.moisturePercent.textContent = 'ERROR';
         elements.statusIndicator.textContent = 'CONNECTION FAILED';
         elements.statusIndicator.className = 'status-indicator status-need-water';
         
-        // Fall back to demo mode
         showDemoData();
     }
 }
@@ -598,13 +657,13 @@ function showDemoData() {
         status: getStatusText(percentage)
     };
     
+    currentData = demoData;
+    
     updateUI(demoData);
     
-    // Update UI to indicate demo mode
     elements.deviceId.textContent = currentDeviceId + ' (PLANT-SENSOR-002)';
     elements.rawValue.textContent = rawValue + ' (PLANT-SENSOR-002)';
     
-    // Also update records table with demo data
     if (realRecords.length === 0) {
         updateRecordsTable();
     }
@@ -621,6 +680,10 @@ function refreshRecords() {
 function exportToCSV() {
     console.log("Exporting to CSV...");
     
+    if (currentData) {
+        addCurrentDataToRecords(currentData);
+    }
+    
     const recordsToExport = realRecords.length > 0 ? realRecords : getDemoRecords();
     
     if (recordsToExport.length === 0) {
@@ -631,10 +694,8 @@ function exportToCSV() {
     const headers = ["Timestamp", "Moisture Level (%)", "Temperature (°C)", "Humidity (%)", "Plant Status"];
     const csvRows = [];
     
-    // Add headers
     csvRows.push(headers.join(','));
     
-    // Add data rows
     recordsToExport.forEach(record => {
         const row = [
             `"${record.formattedTimestamp || record.timestamp || '--'}"`,
@@ -646,7 +707,6 @@ function exportToCSV() {
         csvRows.push(row.join(','));
     });
     
-    // Create and download CSV file
     const csvString = csvRows.join('\n');
     const blob = new Blob([csvString], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -662,13 +722,11 @@ function exportToCSV() {
 
 // Show notification
 function showNotification(message) {
-    // Remove existing notifications
     const existingNotifications = document.querySelectorAll('.notification');
     existingNotifications.forEach(notification => {
         notification.remove();
     });
     
-    // Create notification element
     const notification = document.createElement('div');
     notification.className = 'notification';
     notification.style.cssText = `
@@ -685,7 +743,6 @@ function showNotification(message) {
         animation: slideIn 0.3s ease;
     `;
     
-    // Add keyframes for animation
     const style = document.createElement('style');
     style.textContent = `
         @keyframes slideIn {
@@ -702,7 +759,6 @@ function showNotification(message) {
     notification.textContent = message;
     document.body.appendChild(notification);
     
-    // Remove notification after 3 seconds
     setTimeout(() => {
         notification.style.animation = 'fadeOut 0.3s ease';
         setTimeout(() => {
@@ -719,7 +775,6 @@ function showNotification(message) {
 // Handle page visibility changes
 document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
-        // Page is visible again, refresh data
         fetchData();
         fetchHistoryData();
     }
@@ -729,3 +784,4 @@ document.addEventListener('visibilitychange', function() {
 window.fetchData = fetchData;
 window.refreshRecords = refreshRecords;
 window.exportToCSV = exportToCSV;
+window.changeDevice = changeDevice;
