@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', initDashboard);
 // Main initialization function
 function initDashboard() {
     console.log("Single Plant Monitoring Dashboard initializing...");
+    console.log("Update interval: 1 minute (60 seconds)");
     
     // Initialize gauge chart
     initializeGauge();
@@ -91,13 +92,13 @@ function initDashboard() {
     // Start fetching data immediately
     fetchData();
     
-    // Set up auto-refresh every 10 seconds
-    setInterval(fetchData, 10000);
+    // Set up auto-refresh every 60 seconds (1 MINUTE) - UPDATED
+    setInterval(fetchData, 60000);
     
-    // Update simulated data every minute
-    setInterval(updateData, 60000);
+    // Show notification
+    showNotification("Dashboard loaded! Updates every minute.");
     
-    console.log("Dashboard initialized for single plant monitoring");
+    console.log("Dashboard initialized. Auto-refresh: 60 seconds");
 }
 
 // Generate initial data for all time ranges
@@ -113,7 +114,7 @@ function generateInitialData() {
         minuteData.push({
             timestamp: timestamp,
             moisture: moisture,
-            rawValue: 4095 - (moisture * 30)  // Simulated raw value
+            rawValue: 4095 - (moisture * 30)
         });
     }
     
@@ -146,7 +147,7 @@ function generateInitialData() {
     // Generate sample records (last 50 readings)
     plantRecords = [];
     for (let i = 0; i < 50; i++) {
-        const hoursAgo = i * 0.5; // Every 30 minutes for 25 hours
+        const hoursAgo = i * 0.5;
         const timestamp = new Date(now.getTime() - hoursAgo * 60 * 60000);
         const moisture = generateRealisticMoisture(i, 'record');
         
@@ -224,7 +225,7 @@ function updateRecordsTable() {
             moistureColorClass = 'moisture-high';
         }
         
-        // Create row HTML (NO temperature/humidity columns)
+        // Create row HTML
         row.innerHTML = `
             <td class="timestamp-col">${record.timestamp}</td>
             <td class="percent-col ${moistureColorClass}">${record.moistureLevel.toFixed(1)}%</td>
@@ -338,8 +339,7 @@ function initializeHistoryChart() {
                                     case 'minutes':
                                         return timestamp.toLocaleTimeString([], { 
                                             hour: '2-digit', 
-                                            minute: '2-digit',
-                                            second: '2-digit'
+                                            minute: '2-digit'
                                         });
                                     case 'hours':
                                         return timestamp.toLocaleTimeString([], { 
@@ -405,7 +405,6 @@ function initializeHistoryChart() {
                                 
                                 switch(currentTimeRange) {
                                     case 'minutes':
-                                        // Show every 10th minute
                                         if (index % 10 === 0) {
                                             return timestamp.toLocaleTimeString([], { 
                                                 hour: '2-digit', 
@@ -414,7 +413,6 @@ function initializeHistoryChart() {
                                         }
                                         return '';
                                     case 'hours':
-                                        // Show every 4th hour
                                         if (index % 4 === 0) {
                                             return timestamp.toLocaleTimeString([], { 
                                                 hour: '2-digit'
@@ -422,7 +420,6 @@ function initializeHistoryChart() {
                                         }
                                         return '';
                                     case 'days':
-                                        // Show all days
                                         return timestamp.toLocaleDateString('en-US', { 
                                             weekday: 'short'
                                         });
@@ -540,27 +537,6 @@ function updateHistoryChart() {
     historyChartInstance.update();
 }
 
-// Update data every minute
-function updateData() {
-    const now = new Date();
-    
-    // Update minute data (add new minute)
-    const newMinuteMoisture = generateRealisticMoisture(minuteData.length, 'minute');
-    minuteData.push({
-        timestamp: now,
-        moisture: newMinuteMoisture,
-        rawValue: 4095 - (newMinuteMoisture * 30)
-    });
-    
-    // Keep only last 60 minutes
-    if (minuteData.length > MINUTES_IN_HOUR) {
-        minuteData.shift();
-    }
-    
-    // Update chart if on current time range
-    updateHistoryChart();
-}
-
 // Change time range
 function changeTimeRange(range) {
     // Update active tab
@@ -634,23 +610,6 @@ function addNewRecord(data) {
     
     // Update the table
     updateRecordsTable();
-    
-    // Update minute data with real sensor data
-    minuteData.push({
-        timestamp: now,
-        moisture: percentage,
-        rawValue: data.moisture_value || 0
-    });
-    
-    // Keep only last 60 minutes
-    if (minuteData.length > MINUTES_IN_HOUR) {
-        minuteData.shift();
-    }
-    
-    // Update history chart if on minutes view
-    if (currentTimeRange === 'minutes') {
-        updateHistoryChart();
-    }
 }
 
 // Update all UI elements with sensor data
@@ -683,7 +642,7 @@ function updateUI(data) {
     // Update warning banner
     updateWarningBanner(percentage);
     
-    // Update sensor data - NO temperature/humidity
+    // Update sensor data
     elements.temperature.textContent = 'N/A';
     elements.humidity.textContent = 'N/A';
     elements.rawValue.textContent = rawValue;
@@ -691,7 +650,7 @@ function updateUI(data) {
     // Update counters
     updateCount++;
     elements.updateCount.textContent = updateCount;
-    elements.refreshStatus.textContent = 'Just now';
+    elements.refreshStatus.textContent = 'Updated just now';
     
     // Update timestamp
     const now = new Date();
@@ -730,10 +689,9 @@ function updateUI(data) {
 
 // Fetch data from Firebase
 async function fetchData() {
-    console.log(`Fetching data for device: ${currentDeviceId}`);
+    console.log(`Fetching data for device: ${currentDeviceId} at ${new Date().toLocaleTimeString()}`);
     
     try {
-        // Correct Firebase path matching Arduino code
         const url = `${FIREBASE_CONFIG.databaseURL}/plants/${currentDeviceId}/latest.json`;
         
         const response = await fetch(url);
@@ -795,15 +753,19 @@ function showDemoData() {
 
 // Refresh all data
 function refreshData() {
-    console.log("Refreshing all data...");
+    console.log("Manual refresh triggered");
     fetchData();
-    showNotification("Plant data refreshed successfully");
+    showNotification("Plant data refreshed");
 }
 
 // Show notification
 function showNotification(message) {
+    // Remove existing notifications
+    document.querySelectorAll('.notification').forEach(n => n.remove());
+    
     // Create notification element
     const notification = document.createElement('div');
+    notification.className = 'notification';
     notification.style.cssText = `
         position: fixed;
         top: 20px;
@@ -822,20 +784,6 @@ function showNotification(message) {
         border-left: 5px solid #27ae60;
     `;
     
-    // Add keyframes for animation
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; }
-        }
-    `;
-    document.head.appendChild(style);
-    
     notification.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
     document.body.appendChild(notification);
     
@@ -843,11 +791,8 @@ function showNotification(message) {
     setTimeout(() => {
         notification.style.animation = 'fadeOut 0.3s ease';
         setTimeout(() => {
-            if (document.body.contains(notification)) {
-                document.body.removeChild(notification);
-            }
-            if (document.head.contains(style)) {
-                document.head.removeChild(style);
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
             }
         }, 300);
     }, 3000);
