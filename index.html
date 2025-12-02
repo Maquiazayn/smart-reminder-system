@@ -6,7 +6,6 @@
     <title>Smart Plant Watering Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             margin: 0;
@@ -200,6 +199,7 @@
             opacity: 0.8;
         }
 
+        /* Recent Records Table Styles - Matching Your Picture */
         .records-container {
             margin-top: 20px;
         }
@@ -261,6 +261,7 @@
             transition: transform 0.2s ease;
         }
 
+        /* Column-specific styles matching your picture */
         .timestamp-col {
             font-family: 'Courier New', monospace;
             color: #2d3748;
@@ -299,6 +300,7 @@
             min-width: 120px;
         }
 
+        /* Status colors matching plant watering system */
         .status-need-water-badge {
             background-color: #ff6b6b;
             color: white;
@@ -317,6 +319,7 @@
             border: 2px solid #228be6;
         }
 
+        /* Water level colors for consistency */
         .water-level-low {
             color: #ff6b6b;
             font-weight: 800;
@@ -381,54 +384,10 @@
             font-weight: 600;
         }
 
-        .connection-status {
-            margin-top: 10px;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            display: inline-block;
-            transition: all 0.3s ease;
-        }
-
-        .connection-connected {
-            background-color: rgba(81, 207, 102, 0.2);
-            color: #51cf66;
-            border: 2px solid #51cf66;
-        }
-
-        .connection-disconnected {
-            background-color: rgba(255, 107, 107, 0.2);
-            color: #ff6b6b;
-            border: 2px solid #ff6b6b;
-        }
-
-        .connection-connecting {
-            background-color: rgba(255, 212, 59, 0.2);
-            color: #ffd43b;
-            border: 2px solid #ffd43b;
-        }
-
-        .connection-demo {
-            background-color: rgba(102, 126, 234, 0.2);
-            color: #667eea;
-            border: 2px solid #667eea;
-        }
-
         @keyframes pulse {
             0% { opacity: 1; }
             50% { opacity: 0.7; }
             100% { opacity: 1; }
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        
-        @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; }
         }
 
         @media (max-width: 768px) {
@@ -496,9 +455,6 @@
         <div class="header">
             <h1><i class="fas fa-seedling"></i> Smart Plant Watering Dashboard</h1>
             <p>Real-time monitoring system for all your plants' health</p>
-            <div id="connectionStatus" class="connection-status connection-connecting">
-                <i class="fas fa-circle-notch fa-spin"></i> Connecting to Firebase...
-            </div>
         </div>
 
         <div class="dashboard">
@@ -541,10 +497,7 @@
                 </div>
                 
                 <div class="device-info">
-                    <p>Device ID: <span class="device-id" id="deviceId">plant-sensor-001</span></p>
-                    <p style="margin-top: 5px; font-size: 0.8rem; color: #666;">
-                        Firebase: smart-plant-watering-e2811
-                    </p>
+                    <p>Device ID: <span class="device-id" id="deviceId">------</span></p>
                 </div>
             </div>
         </div>
@@ -557,11 +510,8 @@
                     <button class="action-btn secondary" onclick="exportToCSV()">
                         <i class="fas fa-file-export"></i> Export CSV
                     </button>
-                    <button class="action-btn" onclick="refreshData()">
+                    <button class="action-btn" onclick="refreshRecords()">
                         <i class="fas fa-sync-alt"></i> Refresh
-                    </button>
-                    <button class="action-btn secondary" onclick="checkFirebaseStructure()">
-                        <i class="fas fa-search"></i> Debug
                     </button>
                 </div>
             </div>
@@ -578,11 +528,7 @@
                         </tr>
                     </thead>
                     <tbody id="recordsTableBody">
-                        <tr>
-                            <td colspan="5" style="text-align: center; padding: 30px;">
-                                <i class="fas fa-circle-notch fa-spin"></i> Waiting for ESP32 data...
-                            </td>
-                        </tr>
+                        <!-- Records will be populated by JavaScript -->
                     </tbody>
                 </table>
                 
@@ -600,586 +546,21 @@
             </div>
         </div>
 
-        <button class="refresh-btn" onclick="refreshData()">
+        <button class="refresh-btn" onclick="fetchData()">
             <i class="fas fa-sync-alt"></i> Refresh All Data
         </button>
 
         <div class="footer">
             <p>Smart Plant Watering Reminder System | IoT Project | ESP32 & Firebase</p>
-            <p>Firebase Project: smart-plant-watering-e2811</p>
-            <p>Device ID: plant-sensor-001 | Data Path: /plants/plant-sensor-001/latest</p>
+            <p>Status indicators: 
+                <span class="status-indicator status-need-water" style="margin: 0 5px; padding: 5px 10px;">NEED WATER (0-30%)</span>
+                <span class="status-indicator status-ok" style="margin: 0 5px; padding: 5px 10px;">OK (31-70%)</span>
+                <span class="status-indicator status-too-wet" style="margin: 0 5px; padding: 5px 10px;">TOO WET (71-100%)</span>
+            </p>
         </div>
     </div>
 
-    <script>
-        // ============ FIREBASE CONFIG ============
-        const FIREBASE_URL = "https://smart-plant-watering-e2811-default-rtdb.firebaseio.com";
-        const DEVICE_ID = "plant-sensor-001";
-        
-        // ============ GLOBAL VARIABLES ============
-        let updateCount = 0;
-        let moistureHistory = [];
-        const MAX_HISTORY = 20;
-        let refreshInterval = null;
-        
-        // Records storage
-        let plantRecords = [];
-        const MAX_RECORDS = 10;
-        
-        // DOM Elements
-        const elements = {
-            moisturePercent: document.getElementById('moisturePercent'),
-            statusIndicator: document.getElementById('statusIndicator'),
-            temperature: document.getElementById('temperature'),
-            humidity: document.getElementById('humidity'),
-            rawValue: document.getElementById('rawValue'),
-            updateCount: document.getElementById('updateCount'),
-            deviceId: document.getElementById('deviceId'),
-            lastUpdate: document.getElementById('lastUpdate'),
-            recordsTableBody: document.getElementById('recordsTableBody'),
-            recordCount: document.getElementById('recordCount'),
-            connectionStatus: document.getElementById('connectionStatus')
-        };
-        
-        // Chart instances
-        let moistureGauge = null;
-        let historyChart = null;
-        
-        // ============ INITIALIZATION ============
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log("🌱 Smart Plant Dashboard Initializing...");
-            console.log("📡 Firebase URL:", FIREBASE_URL);
-            console.log("📱 Device ID:", DEVICE_ID);
-            
-            initializeGauge();
-            initializeHistoryChart();
-            setupInitialDisplay();
-            
-            // Start checking for data
-            checkFirebaseConnection();
-            
-            // Auto-refresh every 3 seconds
-            refreshInterval = setInterval(fetchLatestData, 3000);
-            
-            console.log("✅ Dashboard Ready!");
-        });
-        
-        // ============ SETUP INITIAL DISPLAY ============
-        function setupInitialDisplay() {
-            elements.moisturePercent.textContent = "--%";
-            elements.statusIndicator.textContent = "LOADING...";
-            elements.temperature.textContent = "--°C";
-            elements.humidity.textContent = "--%";
-            elements.rawValue.textContent = "--";
-            elements.updateCount.textContent = "0";
-            elements.lastUpdate.textContent = "--";
-            elements.recordCount.textContent = "0";
-            updateGauge(0);
-            elements.deviceId.textContent = DEVICE_ID;
-        }
-        
-        // ============ CHECK FIREBASE CONNECTION ============
-        async function checkFirebaseConnection() {
-            updateConnectionStatus('connecting', 'Checking Firebase connection...');
-            
-            try {
-                const response = await fetch(`${FIREBASE_URL}/.json`);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log("Firebase connection successful");
-                    
-                    // Check if plants data exists
-                    if (data && data.plants && data.plants[DEVICE_ID]) {
-                        updateConnectionStatus('connected', 'Connected! Found plant data');
-                        fetchLatestData();
-                    } else {
-                        updateConnectionStatus('demo', 'Connected but no plant data yet. Waiting for ESP32...');
-                        console.log("No plant data found yet. Make sure ESP32 is sending data.");
-                    }
-                } else {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-            } catch (error) {
-                console.error("Firebase connection error:", error);
-                updateConnectionStatus('disconnected', `Connection failed: ${error.message}`);
-                
-                // Try again in 10 seconds
-                setTimeout(checkFirebaseConnection, 10000);
-            }
-        }
-        
-        // ============ FETCH LATEST DATA ============
-        async function fetchLatestData() {
-            try {
-                // Fetch latest sensor data
-                const response = await fetch(`${FIREBASE_URL}/plants/${DEVICE_ID}/latest.json`);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    if (data && Object.keys(data).length > 0) {
-                        processSensorData(data);
-                    } else {
-                        // No data yet
-                        if (!elements.connectionStatus.textContent.includes('Waiting')) {
-                            updateConnectionStatus('demo', 'Waiting for ESP32 to send data...');
-                        }
-                    }
-                }
-                
-                // Try to fetch records
-                try {
-                    const recordsResponse = await fetch(`${FIREBASE_URL}/plants/${DEVICE_ID}/records.json`);
-                    if (recordsResponse.ok) {
-                        const recordsData = await recordsResponse.json();
-                        if (recordsData) {
-                            updateRecords(recordsData);
-                        }
-                    }
-                } catch (recordsError) {
-                    // No records yet, that's OK
-                }
-                
-            } catch (error) {
-                // Connection error
-                if (error.message.includes('Failed to fetch')) {
-                    updateConnectionStatus('disconnected', 'Lost connection to Firebase');
-                }
-            }
-        }
-        
-        // ============ PROCESS SENSOR DATA ============
-        function processSensorData(data) {
-            console.log("📊 Received data:", data);
-            
-            // Extract values with fallbacks
-            const moisturePercent = data.moisture_percent || 0;
-            const rawValue = data.moisture_value || 0;
-            const temperature = data.temperature || 22.5;
-            const humidity = data.humidity || 45.2;
-            const status = data.moisture_status || "OK";
-            const timestamp = data.timestamp || Date.now();
-            
-            // Update display
-            elements.moisturePercent.textContent = `${moisturePercent.toFixed(1)}%`;
-            elements.rawValue.textContent = rawValue;
-            elements.temperature.textContent = `${temperature.toFixed(1)}°C`;
-            elements.humidity.textContent = `${humidity.toFixed(1)}%`;
-            
-            // Update status
-            const statusClass = getStatusClass(moisturePercent);
-            const statusText = getStatusText(moisturePercent);
-            elements.statusIndicator.textContent = statusText;
-            elements.statusIndicator.className = `status-indicator ${statusClass}`;
-            
-            // Update gauge
-            updateGauge(moisturePercent);
-            
-            // Update history chart
-            updateHistoryChart(moisturePercent);
-            
-            // Update counters
-            updateCount++;
-            elements.updateCount.textContent = updateCount;
-            
-            // Update timestamp
-            const now = new Date(timestamp);
-            elements.lastUpdate.textContent = now.toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-            
-            // Add to records if significant change
-            addToRecords(moisturePercent, temperature, humidity, statusText, timestamp);
-            
-            // Update connection status
-            updateConnectionStatus('connected', `Live data from ${DEVICE_ID}`);
-        }
-        
-        // ============ ADD TO RECORDS ============
-        function addToRecords(moisture, temp, humidity, status, timestamp) {
-            // Check if we should add this record
-            const lastRecord = plantRecords[0];
-            const timeDiff = lastRecord ? Date.now() - (lastRecord.timestamp || 0) : Infinity;
-            
-            // Add if: first record OR 2 minutes passed OR moisture changed by >3%
-            if (!lastRecord || timeDiff > 120000 || Math.abs(moisture - (lastRecord.moistureLevel || 0)) > 3) {
-                const newRecord = {
-                    timestamp: timestamp,
-                    moistureLevel: moisture,
-                    temperature: temp,
-                    humidity: humidity,
-                    status: status
-                };
-                
-                // Add to beginning
-                plantRecords.unshift(newRecord);
-                
-                // Keep only last MAX_RECORDS
-                if (plantRecords.length > MAX_RECORDS) {
-                    plantRecords.pop();
-                }
-                
-                updateRecordsTable();
-            }
-        }
-        
-        // ============ UPDATE RECORDS ============
-        function updateRecords(recordsData) {
-            if (!recordsData) return;
-            
-            let recordsArray = [];
-            
-            // Handle Firebase push structure (object with keys)
-            if (typeof recordsData === 'object' && !Array.isArray(recordsData)) {
-                Object.values(recordsData).forEach(record => {
-                    if (record) recordsArray.push(record);
-                });
-            } else if (Array.isArray(recordsData)) {
-                recordsArray = recordsData;
-            }
-            
-            // Sort by timestamp (newest first)
-            recordsArray.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-            
-            // Update plant records
-            plantRecords = recordsArray.slice(0, MAX_RECORDS);
-            updateRecordsTable();
-        }
-        
-        // ============ UPDATE RECORDS TABLE ============
-        function updateRecordsTable() {
-            const tableBody = elements.recordsTableBody;
-            
-            if (plantRecords.length === 0) {
-                tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="5" style="text-align: center; padding: 30px; color: #666;">
-                            <i class="fas fa-database"></i> No records yet. Waiting for ESP32 data...
-                        </td>
-                    </tr>
-                `;
-                elements.recordCount.textContent = '0';
-                return;
-            }
-            
-            let tableHTML = '';
-            
-            plantRecords.forEach(record => {
-                const moisture = record.moistureLevel || 0;
-                const temp = record.temperature || 22.5;
-                const humidity = record.humidity || 45.2;
-                const status = record.status || "OK";
-                
-                // Format timestamp
-                let displayTime = "--";
-                if (record.timestamp) {
-                    const date = new Date(record.timestamp);
-                    if (!isNaN(date.getTime())) {
-                        displayTime = date.toLocaleString();
-                    }
-                }
-                
-                let statusClass = '';
-                let moistureColorClass = '';
-                
-                if (status === "NEED WATER") {
-                    statusClass = 'status-need-water-badge';
-                    moistureColorClass = 'water-level-low';
-                } else if (status === "OK") {
-                    statusClass = 'status-ok-badge';
-                    moistureColorClass = 'water-level-ok';
-                } else {
-                    statusClass = 'status-too-wet-badge';
-                    moistureColorClass = 'water-level-high';
-                }
-                
-                tableHTML += `
-                    <tr>
-                        <td class="timestamp-col">${displayTime}</td>
-                        <td class="percent-col ${moistureColorClass}">${moisture.toFixed(1)}%</td>
-                        <td class="value-col">${temp.toFixed(1)}°C</td>
-                        <td class="percent-col">${humidity.toFixed(1)}%</td>
-                        <td class="status-col">
-                            <span class="status-badge ${statusClass}">${status}</span>
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            tableBody.innerHTML = tableHTML;
-            elements.recordCount.textContent = plantRecords.length;
-        }
-        
-        // ============ UPDATE CONNECTION STATUS ============
-        function updateConnectionStatus(status, message = '') {
-            elements.connectionStatus.className = 'connection-status';
-            
-            switch(status) {
-                case 'connected':
-                    elements.connectionStatus.className += ' connection-connected';
-                    elements.connectionStatus.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
-                    break;
-                case 'disconnected':
-                    elements.connectionStatus.className += ' connection-disconnected';
-                    elements.connectionStatus.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
-                    break;
-                case 'connecting':
-                    elements.connectionStatus.className += ' connection-connecting';
-                    elements.connectionStatus.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> ${message}`;
-                    break;
-                case 'demo':
-                    elements.connectionStatus.className += ' connection-demo';
-                    elements.connectionStatus.innerHTML = `<i class="fas fa-flask"></i> ${message}`;
-                    break;
-            }
-        }
-        
-        // ============ GET STATUS FUNCTIONS ============
-        function getStatusClass(percentage) {
-            if (percentage <= 30) return 'status-need-water';
-            if (percentage <= 70) return 'status-ok';
-            return 'status-too-wet';
-        }
-        
-        function getStatusText(percentage) {
-            if (percentage <= 30) return 'NEED WATER';
-            if (percentage <= 70) return 'OK';
-            return 'TOO WET';
-        }
-        
-        // ============ CHART FUNCTIONS ============
-        function initializeGauge() {
-            const ctx = document.getElementById('moistureGauge').getContext('2d');
-            moistureGauge = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    datasets: [{
-                        data: [0, 100],
-                        backgroundColor: ['#e9ecef', '#e9ecef'],
-                        borderWidth: 0,
-                        circumference: 180,
-                        rotation: 270
-                    }]
-                },
-                options: {
-                    cutout: '80%',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { enabled: false }
-                    }
-                }
-            });
-        }
-        
-        function initializeHistoryChart() {
-            const ctx = document.getElementById('historyChart').getContext('2d');
-            historyChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: Array(MAX_HISTORY).fill(''),
-                    datasets: [{
-                        label: 'Moisture %',
-                        data: Array(MAX_HISTORY).fill(0),
-                        borderColor: '#667eea',
-                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                        fill: true,
-                        tension: 0.2,
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100,
-                            grid: { color: 'rgba(0,0,0,0.05)' },
-                            ticks: {
-                                callback: function(value) {
-                                    return value + '%';
-                                }
-                            }
-                        },
-                        x: {
-                            display: false,
-                            grid: { display: false }
-                        }
-                    }
-                }
-            });
-        }
-        
-        function updateGauge(percentage) {
-            if (!moistureGauge) return;
-            
-            moistureGauge.data.datasets[0].data = [percentage, 100 - percentage];
-            
-            let color;
-            if (percentage <= 30) {
-                color = '#ff6b6b';
-            } else if (percentage <= 70) {
-                color = '#51cf66';
-            } else {
-                color = '#339af0';
-            }
-            
-            moistureGauge.data.datasets[0].backgroundColor = [color, '#e9ecef'];
-            moistureGauge.update();
-        }
-        
-        function updateHistoryChart(percentage) {
-            if (!historyChart) return;
-            
-            moistureHistory.push(percentage);
-            
-            if (moistureHistory.length > MAX_HISTORY) {
-                moistureHistory.shift();
-            }
-            
-            historyChart.data.datasets[0].data = moistureHistory;
-            historyChart.update();
-        }
-        
-        // ============ REFRESH DATA ============
-        function refreshData() {
-            console.log("🔄 Manual refresh triggered");
-            fetchLatestData();
-            showNotification("Refreshing data...");
-        }
-        
-        // ============ DEBUG FUNCTIONS ============
-        async function checkFirebaseStructure() {
-            console.log("🔍 Checking Firebase structure...");
-            showNotification("Checking Firebase structure...", "info");
-            
-            try {
-                const response = await fetch(`${FIREBASE_URL}/.json`);
-                const data = await response.json();
-                
-                console.log("📊 Full Firebase structure:", data);
-                
-                if (data && data.plants) {
-                    console.log("✅ Found 'plants' node");
-                    if (data.plants[DEVICE_ID]) {
-                        console.log(`✅ Found device: ${DEVICE_ID}`);
-                        console.log("Device data:", data.plants[DEVICE_ID]);
-                    } else {
-                        console.log(`❌ Device ${DEVICE_ID} not found in plants`);
-                    }
-                } else {
-                    console.log("❌ 'plants' node not found");
-                }
-                
-                // Show in alert for easy viewing
-                alert("Firebase Structure Check:\n\n" +
-                      "1. Plants node: " + (data.plants ? "FOUND" : "NOT FOUND") + "\n" +
-                      "2. Device " + DEVICE_ID + ": " + (data.plants && data.plants[DEVICE_ID] ? "FOUND" : "NOT FOUND") + "\n\n" +
-                      "Check browser console for details.");
-                      
-            } catch (error) {
-                console.error("Debug error:", error);
-                showNotification("Debug failed: " + error.message, "error");
-            }
-        }
-        
-        // ============ EXPORT TO CSV ============
-        function exportToCSV() {
-            if (plantRecords.length === 0) {
-                showNotification("No data to export", "error");
-                return;
-            }
-            
-            const headers = ["Timestamp", "Moisture Level (%)", "Temperature (°C)", "Humidity (%)", "Plant Status"];
-            const csvRows = [];
-            
-            csvRows.push(headers.join(','));
-            
-            plantRecords.forEach(record => {
-                const timestamp = record.timestamp ? 
-                    new Date(record.timestamp).toLocaleString() : 
-                    new Date().toLocaleString();
-                
-                const row = [
-                    `"${timestamp}"`,
-                    (record.moistureLevel || 0).toFixed(1),
-                    (record.temperature || 22.5).toFixed(1),
-                    (record.humidity || 45.2).toFixed(1),
-                    `"${record.status || "OK"}"`
-                ];
-                csvRows.push(row.join(','));
-            });
-            
-            const csvString = csvRows.join('\n');
-            const blob = new Blob([csvString], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.setAttribute('href', url);
-            a.setAttribute('download', `plant_data_${new Date().toISOString().split('T')[0]}.csv`);
-            a.click();
-            
-            showNotification("CSV file downloaded successfully");
-        }
-        
-        // ============ SHOW NOTIFICATION ============
-        function showNotification(message, type = 'success') {
-            // Remove existing notifications
-            document.querySelectorAll('.notification').forEach(n => n.remove());
-            
-            const notification = document.createElement('div');
-            notification.className = 'notification';
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: ${type === 'error' ? '#ff6b6b' : type === 'info' ? '#339af0' : '#51cf66'};
-                color: white;
-                padding: 15px 20px;
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                z-index: 1000;
-                font-weight: 500;
-                animation: slideIn 0.3s ease;
-                max-width: 300px;
-            `;
-            
-            const icon = type === 'error' ? 'exclamation-circle' : type === 'info' ? 'info-circle' : 'check-circle';
-            notification.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.style.animation = 'fadeOut 0.3s ease';
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.parentNode.removeChild(notification);
-                    }
-                }, 300);
-            }, 3000);
-        }
-        
-        // ============ KEYBOARD SHORTCUTS ============
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 'r') {
-                e.preventDefault();
-                refreshData();
-            }
-            if (e.ctrlKey && e.key === 'd') {
-                e.preventDefault();
-                checkFirebaseStructure();
-            }
-        });
-        
-        // ============ EXPORT DEBUG FUNCTION ============
-        window.debugFirebase = checkFirebaseStructure;
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="dashboard.js"></script>
 </body>
 </html>
