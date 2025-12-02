@@ -1,5 +1,5 @@
-// dashboard.js - Smart Plant Watering Dashboard - COMPLETE WORKING VERSION
-// FIXED: Correctly reads moisture: 100, moistureStatus: "TOO WET", sensor_value: 1200 from Firebase
+// dashboard.js - Smart Plant Watering Dashboard - FINAL COMPLETE VERSION
+// UPDATED: Fixed loading overlay, data fetching, and UI display
 
 const FIREBASE_CONFIG = {
   databaseURL: "https://smart-plant-watering-e2811-default-rtdb.firebaseio.com"
@@ -13,7 +13,7 @@ const MAX_HISTORY = 60;
 let realRecords = [];
 let currentData = null;
 
-// HTML elements - make sure these match your HTML IDs
+// All HTML elements - make sure these IDs exist in your HTML
 const elements = {
     moisturePercent: document.getElementById('moisturePercent'),
     statusIndicator: document.getElementById('statusIndicator'),
@@ -27,48 +27,166 @@ const elements = {
     recordCount: document.getElementById('recordCount')
 };
 
-// Debug: Check which elements were found
-console.log("🔍 Found HTML elements:", Object.keys(elements).filter(key => elements[key] !== null));
+// Debug: Check which elements exist
+console.log("🔍 Dashboard Elements Status:");
+Object.keys(elements).forEach(key => {
+    console.log(`  ${key}:`, elements[key] ? '✅ Found' : '❌ Missing');
+});
 
 let moistureGauge = null;
 let historyChart = null;
 let countdownInterval = null;
 let currentCountdown = 10;
 
+// ==================== LOADING OVERLAY FUNCTIONS ====================
 function showLoading(show) {
     const loadingOverlay = document.getElementById('loadingOverlay');
-    if (loadingOverlay) {
-        loadingOverlay.style.display = show ? 'flex' : 'none';
+    
+    if (!loadingOverlay) {
+        console.warn("⚠️ Loading overlay element not found in HTML");
+        return;
+    }
+    
+    if (show) {
+        // SHOW LOADING OVERLAY - FULL SCREEN
+        loadingOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.98);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        `;
+        
+        // Create loading content if not exists
+        if (!loadingOverlay.querySelector('.loading-content')) {
+            const loadingContent = document.createElement('div');
+            loadingContent.className = 'loading-content';
+            loadingContent.style.cssText = `
+                text-align: center;
+                max-width: 400px;
+                padding: 40px;
+            `;
+            
+            // Add logo/icon
+            const logo = document.createElement('div');
+            logo.innerHTML = `
+                <div style="font-size: 48px; margin-bottom: 20px; color: #4CAF50;">🌱</div>
+                <h2 style="color: #2d3748; margin-bottom: 10px;">Smart Plant Watering</h2>
+                <div style="color: #718096; margin-bottom: 30px;">Loading dashboard...</div>
+            `;
+            loadingContent.appendChild(logo);
+            
+            // Add spinner
+            const spinner = document.createElement('div');
+            spinner.className = 'loading-spinner';
+            spinner.style.cssText = `
+                width: 50px;
+                height: 50px;
+                border: 4px solid #f3f3f3;
+                border-top: 4px solid #3498db;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 20px auto;
+            `;
+            loadingContent.appendChild(spinner);
+            
+            // Add loading text
+            const loadingText = document.createElement('div');
+            loadingText.className = 'loading-text';
+            loadingText.id = 'loadingText';
+            loadingText.textContent = 'Connecting to plant sensor...';
+            loadingText.style.cssText = `
+                color: #4a5568;
+                font-size: 16px;
+                margin-bottom: 15px;
+                font-weight: 500;
+            `;
+            loadingContent.appendChild(loadingText);
+            
+            // Add device info
+            const deviceInfo = document.createElement('div');
+            deviceInfo.className = 'loading-device-info';
+            deviceInfo.id = 'loadingDeviceInfo';
+            deviceInfo.textContent = `Device: ${currentDeviceId || 'PLANT-001'}`;
+            deviceInfo.style.cssText = `
+                color: #718096;
+                font-size: 14px;
+                margin-top: 10px;
+            `;
+            loadingContent.appendChild(deviceInfo);
+            
+            loadingOverlay.appendChild(loadingContent);
+        }
+        
+        // Update loading text
+        const loadingText = document.getElementById('loadingText');
+        if (loadingText) {
+            loadingText.textContent = 'Connecting to plant sensor...';
+        }
+        
+        // Update device info
+        const deviceInfo = document.getElementById('loadingDeviceInfo');
+        if (deviceInfo) {
+            deviceInfo.textContent = `Device: ${currentDeviceId || 'PLANT-001'}`;
+        }
+        
+        // Add spin animation if not exists
+        if (!document.querySelector('#spin-animation')) {
+            const style = document.createElement('style');
+            style.id = 'spin-animation';
+            style.textContent = `
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+    } else {
+        // HIDE LOADING OVERLAY
+        loadingOverlay.style.display = 'none';
     }
 }
 
-// Initialize dashboard when page loads
+function updateLoadingText(text) {
+    const loadingText = document.getElementById('loadingText');
+    if (loadingText) {
+        loadingText.textContent = text;
+    }
+}
+
+// ==================== INITIALIZATION ====================
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("📱 DOM Content Loaded - Initializing dashboard...");
-    setTimeout(initDashboard, 100); // Small delay to ensure all elements are ready
+    console.log("🌱 Smart Plant Watering Dashboard - Starting...");
+    initDashboard();
 });
 
 function initDashboard() {
-    console.log("🚀 Initializing Smart Plant Watering Dashboard...");
-    showLoading(true);
+    console.log("🚀 Initializing dashboard...");
     
-    // Get device ID from URL or localStorage
+    // Show loading immediately
+    showLoading(true);
+    updateLoadingText("Initializing dashboard...");
+    
+    // Get device ID
     const urlParams = new URLSearchParams(window.location.search);
     currentDeviceId = urlParams.get('device') || localStorage.getItem('plantDeviceId') || 'PLANT-001';
     
-    console.log("📟 Using Device ID:", currentDeviceId);
-    
-    // Store device ID
+    console.log("📱 Device ID:", currentDeviceId);
     localStorage.setItem('plantDeviceId', currentDeviceId);
     
-    // Update device display
-    if (elements.deviceId) {
-        elements.deviceId.textContent = currentDeviceId;
-    } else {
-        console.warn("⚠️ deviceId element not found in HTML");
-    }
+    // Update loading text with device info
+    updateLoadingText(`Loading data for ${currentDeviceId}...`);
     
-    // Initialize charts
+    // Initialize UI components
     initializeGauge();
     initializeHistoryChart();
     
@@ -78,24 +196,24 @@ function initDashboard() {
     // Setup event listeners
     setupEventListeners();
     
-    // Fetch data immediately
+    // Fetch data
+    updateLoadingText("Fetching live data...");
     fetchData();
     
     // Start auto-refresh every 10 seconds
     setInterval(fetchData, 10000);
     
-    // Fetch history data
+    // Fetch history
     fetchHistoryData();
     
     // Start countdown timer
     startCountdownTimer();
     
-    console.log("✅ Dashboard initialized successfully");
-    showLoading(false);
+    console.log("✅ Dashboard initialization complete");
 }
 
 function showInitialData() {
-    console.log("📊 Showing initial placeholder data");
+    console.log("📊 Setting initial display values");
     
     const now = new Date();
     const timeString = now.toLocaleTimeString([], {
@@ -104,7 +222,7 @@ function showInitialData() {
         second: '2-digit'
     });
     
-    // Set initial values based on your Firebase data structure
+    // Set all initial values (will be updated when real data loads)
     if (elements.moisturePercent) {
         elements.moisturePercent.textContent = '100.0%';
     }
@@ -123,7 +241,7 @@ function showInitialData() {
     }
     
     if (elements.humidity) {
-        elements.humidity.textContent = '--%';
+        elements.humidity.textContent = '45.0%';
     }
     
     if (elements.updateCount) {
@@ -138,7 +256,7 @@ function showInitialData() {
         elements.deviceId.textContent = currentDeviceId;
     }
     
-    // Initialize gauge
+    // Initialize gauge to 100%
     if (moistureGauge) {
         moistureGauge.data.datasets[0].data = [100, 0];
         moistureGauge.data.datasets[0].backgroundColor = ['#339af0', '#e9ecef'];
@@ -151,46 +269,43 @@ function setupEventListeners() {
     const refreshBtn = document.querySelector('.refresh-btn');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', function() {
-            console.log("🔄 Manual refresh requested");
-            fetchData();
-            showNotification("Data refreshed manually");
+            console.log("🔄 Manual refresh triggered");
+            showLoading(true);
+            updateLoadingText("Manual refresh...");
+            setTimeout(() => {
+                fetchData();
+                showNotification("Data refreshed");
+            }, 500);
         });
+    } else {
+        console.warn("⚠️ Refresh button not found");
     }
     
     // Export button
     const exportBtn = document.getElementById('exportBtn');
     if (exportBtn) {
         exportBtn.addEventListener('click', exportToCSV);
+    } else {
+        console.warn("⚠️ Export button not found");
     }
 }
 
 function startCountdownTimer() {
-    // Clear existing timer
     if (countdownInterval) {
         clearInterval(countdownInterval);
     }
     
     currentCountdown = 10;
     
-    // Find or create countdown element
+    // Find countdown display element
     let countdownElement = document.getElementById('countdownTimer');
     if (!countdownElement) {
-        // Look for existing countdown display
-        const countdownSpans = document.querySelectorAll('span');
-        countdownSpans.forEach(span => {
-            if (span.textContent.includes('Next refresh in:')) {
-                countdownElement = span;
-            }
-        });
-        
-        // If still not found, check last update area
-        if (!countdownElement && elements.lastUpdate) {
-            const parent = elements.lastUpdate.parentElement;
-            if (parent) {
-                countdownElement = document.createElement('div');
-                countdownElement.id = 'countdownTimer';
-                countdownElement.style.cssText = 'margin-top: 5px; font-size: 0.85rem; color: #667eea; font-weight: 500;';
-                parent.appendChild(countdownElement);
+        // Try to find it by text content
+        const elements = document.querySelectorAll('*');
+        for (let el of elements) {
+            if (el.textContent && el.textContent.includes('Next refresh in:')) {
+                countdownElement = el;
+                break;
             }
         }
     }
@@ -210,73 +325,82 @@ function startCountdownTimer() {
             countdownElement.style.color = currentCountdown <= 3 ? '#ff6b6b' : '#667eea';
             
         }, 1000);
+    } else {
+        console.warn("⚠️ Countdown timer element not found");
     }
 }
 
+// ==================== DATA FETCHING ====================
 async function fetchData() {
-    console.log(`🔍 Fetching live data for device: ${currentDeviceId}`);
+    console.log(`🔍 Fetching data for: ${currentDeviceId}`);
     
-    showLoading(true);
+    updateLoadingText(`Fetching from ${currentDeviceId}...`);
     
     try {
         const timestamp = new Date().getTime();
         const url = `${FIREBASE_CONFIG.databaseURL}/plants/${currentDeviceId}/latest.json?t=${timestamp}`;
         
-        console.log("📡 Request URL:", url);
+        console.log("🌐 Request URL:", url);
         
         const response = await fetch(url);
         
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            throw new Error(`HTTP ${response.status}`);
         }
         
         const data = await response.json();
-        console.log("✅ Firebase data received:", data);
+        console.log("📦 Data received:", data);
         
         if (data === null || Object.keys(data).length === 0) {
-            console.warn("⚠️ No data found in Firebase - showing demo data");
-            showDemoData();
-            showLoading(false);
+            console.warn("⚠️ No data in Firebase");
+            updateLoadingText("No data found - showing demo...");
+            setTimeout(() => {
+                showDemoData();
+                showLoading(false);
+            }, 1500);
             return;
         }
         
-        // Process and display the data
-        processFirebaseData(data);
-        showLoading(false);
+        updateLoadingText("Processing data...");
+        
+        // Process the actual data
+        setTimeout(() => {
+            processFirebaseData(data);
+            showLoading(false);
+        }, 800);
         
     } catch (error) {
-        console.error('❌ Error fetching data:', error);
-        showNotification("Connection error - showing demo data");
-        showDemoData();
-        showLoading(false);
+        console.error('❌ Fetch error:', error);
+        updateLoadingText("Connection error - showing demo...");
+        setTimeout(() => {
+            showNotification("Connection error - using demo data");
+            showDemoData();
+            showLoading(false);
+        }, 1500);
     }
 }
 
 function processFirebaseData(data) {
-    console.log("🔄 Processing Firebase data:", data);
+    console.log("🔄 Processing data:", data);
     
-    // EXTRACT VALUES FROM YOUR FIREBASE STRUCTURE:
-    // From your data: moisture: 100, moistureStatus: "TOO WET", sensor_value: 1200, temperature: 22.9
-    
+    // Extract values from your Firebase structure
     const moistureValue = data.moisture || data.moisture_percent || 100;
     const statusText = data.moistureStatus || data.status || "TOO WET";
     const rawSensorValue = data.sensor_value || data.value || data.raw || 1200;
     const temperatureValue = data.temperature || 22.9;
     const humidityValue = data.humidity || 45.0;
     const updateCountValue = data.update_count || 0;
-    const timestampValue = data.timestamp || new Date().toLocaleTimeString();
     const deviceIdValue = data.device_id || currentDeviceId;
     
-    console.log("📊 Extracted values:", {
+    console.log("📊 Extracted:", {
         moisture: moistureValue,
         status: statusText,
         rawValue: rawSensorValue,
         temperature: temperatureValue,
-        humidity: humidityValue,
-        updates: updateCountValue
+        humidity: humidityValue
     });
     
-    // UPDATE ALL UI ELEMENTS
+    // Update UI
     updateAllDisplays({
         moisture: moistureValue,
         status: statusText,
@@ -284,7 +408,6 @@ function processFirebaseData(data) {
         temperature: temperatureValue,
         humidity: humidityValue,
         updateCount: updateCountValue,
-        timestamp: timestampValue,
         deviceId: deviceIdValue
     });
     
@@ -295,8 +418,8 @@ function processFirebaseData(data) {
         raw_value: rawSensorValue,
         temperature: temperatureValue,
         humidity: humidityValue,
-        timestamp: timestampValue,
-        device_id: deviceIdValue
+        device_id: deviceIdValue,
+        timestamp: new Date().toISOString()
     };
     
     // Add to records
@@ -312,20 +435,20 @@ function processFirebaseData(data) {
         startCountdownTimer();
     }
     
-    console.log("✅ UI updated successfully");
+    console.log("✅ Data processing complete");
+    showNotification("Data updated successfully");
 }
 
 function updateAllDisplays(data) {
-    // Moisture percentage
+    // Update all UI elements with new data
     if (elements.moisturePercent) {
         elements.moisturePercent.textContent = `${data.moisture.toFixed(1)}%`;
     }
     
-    // Status with appropriate class
     if (elements.statusIndicator) {
         elements.statusIndicator.textContent = data.status;
         
-        // Determine status class
+        // Set status class
         let statusClass = 'status-too-wet';
         if (data.status.includes("NEED WATER") || data.moisture < 30) {
             statusClass = 'status-need-water';
@@ -336,27 +459,22 @@ function updateAllDisplays(data) {
         elements.statusIndicator.className = `status-indicator ${statusClass}`;
     }
     
-    // Raw sensor value
     if (elements.rawValue) {
         elements.rawValue.textContent = data.rawValue;
     }
     
-    // Temperature
     if (elements.temperature) {
         elements.temperature.textContent = `${data.temperature.toFixed(1)}°C`;
     }
     
-    // Humidity
     if (elements.humidity) {
         elements.humidity.textContent = `${data.humidity.toFixed(1)}%`;
     }
     
-    // Update count
     if (elements.updateCount) {
         elements.updateCount.textContent = data.updateCount || updateCount++;
     }
     
-    // Last update time
     if (elements.lastUpdate) {
         const now = new Date();
         elements.lastUpdate.textContent = now.toLocaleTimeString([], {
@@ -366,7 +484,6 @@ function updateAllDisplays(data) {
         });
     }
     
-    // Device ID
     if (elements.deviceId && data.deviceId) {
         elements.deviceId.textContent = data.deviceId;
         currentDeviceId = data.deviceId;
@@ -401,13 +518,12 @@ function addToRecords(data) {
             realRecords = realRecords.slice(0, 50);
         }
         
-        // Update records table
         updateRecordsTable();
     }
 }
 
 async function fetchHistoryData() {
-    console.log("📚 Fetching historical data...");
+    console.log("📚 Fetching history data...");
     
     try {
         const url = `${FIREBASE_CONFIG.databaseURL}/plants/${currentDeviceId}/history.json?orderBy="timestamp"&limitToLast=30`;
@@ -421,7 +537,7 @@ async function fetchHistoryData() {
         const data = await response.json();
         
         if (data === null) {
-            console.log("No historical data available yet");
+            console.log("No history data yet");
             return;
         }
         
@@ -448,10 +564,9 @@ async function fetchHistoryData() {
         // Add to realRecords
         realRecords = [...historyArray, ...realRecords].slice(0, 50);
         
-        // Update table
         updateRecordsTable();
         
-        console.log(`✅ Loaded ${historyArray.length} historical records`);
+        console.log(`✅ Loaded ${historyArray.length} history records`);
         
     } catch (error) {
         console.error('Error fetching history:', error);
@@ -466,16 +581,16 @@ function updateRecordsTable() {
         return;
     }
     
-    // Use real records or show empty state
     const recordsToShow = realRecords.length > 0 ? realRecords.slice(0, 10) : [];
     
     if (recordsToShow.length === 0) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="5" style="text-align: center; padding: 20px; color: #718096;">
-                    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                        <i class="fas fa-leaf" style="font-size: 2rem; color: #cbd5e0;"></i>
-                        <div>No records yet. Data will appear here soon.</div>
+                <td colspan="5" style="text-align: center; padding: 40px; color: #718096;">
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+                        <i class="fas fa-leaf" style="font-size: 2.5rem; color: #cbd5e0;"></i>
+                        <div style="font-size: 1rem;">No plant records available yet.</div>
+                        <div style="font-size: 0.9rem; color: #a0aec0;">Data will appear here automatically.</div>
                     </div>
                 </td>
             </tr>
@@ -488,10 +603,8 @@ function updateRecordsTable() {
         return;
     }
     
-    // Clear table
     tableBody.innerHTML = '';
     
-    // Add each record
     recordsToShow.forEach(record => {
         const row = document.createElement('tr');
         
@@ -530,7 +643,7 @@ function updateRecordsTable() {
             }
         }
         
-        // Create row HTML
+        // Create row
         row.innerHTML = `
             <td class="timestamp-col">${displayTime}</td>
             <td class="percent-col ${moistureColorClass}">${moisture.toFixed(1)}%</td>
@@ -544,16 +657,16 @@ function updateRecordsTable() {
         tableBody.appendChild(row);
     });
     
-    // Update record count
     if (elements.recordCount) {
         elements.recordCount.textContent = recordsToShow.length;
     }
 }
 
+// ==================== CHARTS ====================
 function initializeGauge() {
     const canvas = document.getElementById('moistureGauge');
     if (!canvas) {
-        console.error("❌ moistureGauge canvas not found");
+        console.error("❌ Gauge canvas not found");
         return;
     }
     
@@ -573,14 +686,10 @@ function initializeGauge() {
         options: {
             cutout: '80%',
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: { display: false },
                 tooltip: { enabled: false }
-            },
-            animation: {
-                animateScale: true,
-                animateRotate: true
             }
         }
     });
@@ -591,7 +700,7 @@ function initializeGauge() {
 function initializeHistoryChart() {
     const canvas = document.getElementById('historyChart');
     if (!canvas) {
-        console.error("❌ historyChart canvas not found");
+        console.error("❌ History chart canvas not found");
         return;
     }
     
@@ -609,64 +718,31 @@ function initializeHistoryChart() {
                 fill: true,
                 tension: 0.4,
                 borderWidth: 2,
-                pointBackgroundColor: '#667eea',
-                pointBorderColor: '#ffffff',
-                pointBorderWidth: 2,
                 pointRadius: 3,
                 pointHoverRadius: 6
             }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             plugins: {
-                legend: { display: false },
-                tooltip: {
-                    mode: 'index',
-                    intersect: false,
-                    callbacks: {
-                        label: function(context) {
-                            return `Moisture: ${context.parsed.y.toFixed(1)}%`;
-                        }
-                    }
-                }
+                legend: { display: false }
             },
             scales: {
                 y: {
                     beginAtZero: true,
                     max: 100,
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
-                    },
                     ticks: {
                         callback: function(value) {
                             return value + '%';
-                        },
-                        stepSize: 20
-                    },
-                    title: {
-                        display: true,
-                        text: 'Moisture Level',
-                        color: '#4a5568'
+                        }
                     }
                 },
                 x: {
                     grid: {
                         display: false
-                    },
-                    ticks: {
-                        maxRotation: 0
-                    },
-                    title: {
-                        display: true,
-                        text: 'Time',
-                        color: '#4a5568'
                     }
                 }
-            },
-            interaction: {
-                intersect: false,
-                mode: 'nearest'
             }
         }
     });
@@ -677,21 +753,19 @@ function initializeHistoryChart() {
 function updateGauge(percentage) {
     if (!moistureGauge) return;
     
-    // Smooth transition
     moistureGauge.data.datasets[0].data = [percentage, 100 - percentage];
     
-    // Update color based on moisture level
     let gaugeColor;
     if (percentage <= 30) {
-        gaugeColor = '#ff6b6b'; // Red for dry
+        gaugeColor = '#ff6b6b';
     } else if (percentage <= 70) {
-        gaugeColor = '#51cf66'; // Green for optimal
+        gaugeColor = '#51cf66';
     } else {
-        gaugeColor = '#339af0'; // Blue for wet
+        gaugeColor = '#339af0';
     }
     
     moistureGauge.data.datasets[0].backgroundColor = [gaugeColor, '#e9ecef'];
-    moistureGauge.update('active');
+    moistureGauge.update();
 }
 
 function updateHistoryChart(percentage) {
@@ -704,25 +778,23 @@ function updateHistoryChart(percentage) {
         second: '2-digit'
     });
     
-    // Add new data point
     moistureHistory.push({
         time: timeLabel,
         percentage: percentage
     });
     
-    // Keep only last 30 points
     if (moistureHistory.length > 30) {
         moistureHistory.shift();
     }
     
-    // Update chart
     historyChart.data.labels = moistureHistory.map(item => item.time);
     historyChart.data.datasets[0].data = moistureHistory.map(item => item.percentage);
-    historyChart.update('active');
+    historyChart.update();
 }
 
+// ==================== DEMO DATA ====================
 function showDemoData() {
-    console.log("🔄 Showing demonstration data");
+    console.log("🔄 Showing demo data");
     
     const demoData = {
         moisture: 100,
@@ -731,19 +803,14 @@ function showDemoData() {
         temperature: 22.9,
         humidity: 45.5,
         updateCount: Math.floor(Math.random() * 50) + 1,
-        timestamp: new Date().toLocaleTimeString(),
         deviceId: currentDeviceId
     };
     
     updateAllDisplays(demoData);
     
-    // Update gauge
     updateGauge(demoData.moisture);
-    
-    // Update history chart
     updateHistoryChart(demoData.moisture);
     
-    // Add demo record
     const demoRecord = {
         formattedTimestamp: new Date().toLocaleString(),
         moisture_percent: demoData.moisture,
@@ -761,50 +828,54 @@ function showDemoData() {
     
     updateRecordsTable();
     
-    showNotification("Using demonstration data");
+    showNotification("Using demo data - check Firebase connection");
 }
 
+// ==================== UTILITY FUNCTIONS ====================
 function showNotification(message, type = 'info') {
-    // Remove any existing notifications
-    const existingNotifications = document.querySelectorAll('.custom-notification');
-    existingNotifications.forEach(notification => notification.remove());
+    // Remove existing notifications
+    const existing = document.querySelectorAll('.dashboard-notification');
+    existing.forEach(el => el.remove());
     
     // Create notification
     const notification = document.createElement('div');
-    notification.className = 'custom-notification';
+    notification.className = 'dashboard-notification';
     notification.style.cssText = `
         position: fixed;
         top: 20px;
         right: 20px;
         background: ${type === 'error' ? '#ff6b6b' : type === 'warning' ? '#ffd43b' : '#51cf66'};
         color: white;
-        padding: 12px 20px;
+        padding: 12px 24px;
         border-radius: 8px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         z-index: 10000;
         font-weight: 500;
         font-size: 14px;
+        animation: slideInRight 0.3s ease;
         max-width: 300px;
-        animation: slideIn 0.3s ease;
     `;
     
     notification.textContent = message;
     document.body.appendChild(notification);
     
-    // Add CSS animation
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-    `;
-    document.head.appendChild(style);
+    // Add animation style if needed
+    if (!document.querySelector('#notification-style')) {
+        const style = document.createElement('style');
+        style.id = 'notification-style';
+        style.textContent = `
+            @keyframes slideInRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
     
     // Auto-remove after 3 seconds
     setTimeout(() => {
         if (notification.parentNode) {
-            notification.style.animation = 'slideIn 0.3s ease reverse';
+            notification.style.animation = 'slideInRight 0.3s ease reverse';
             setTimeout(() => {
                 if (notification.parentNode) {
                     document.body.removeChild(notification);
@@ -821,9 +892,7 @@ function exportToCSV() {
     }
     
     const headers = ["Timestamp", "Moisture (%)", "Temperature (°C)", "Humidity (%)", "Status", "Raw Value"];
-    const csvRows = [];
-    
-    csvRows.push(headers.join(','));
+    const csvRows = [headers.join(',')];
     
     realRecords.forEach(record => {
         const row = [
@@ -850,30 +919,29 @@ function exportToCSV() {
     link.click();
     document.body.removeChild(link);
     
-    showNotification(`Exported ${realRecords.length} records to CSV`);
+    showNotification(`Exported ${realRecords.length} records`);
 }
 
-// Handle page visibility changes
+// ==================== EVENT HANDLERS ====================
 document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
-        console.log("👀 Page became visible - refreshing data");
+        console.log("👀 Page visible - refreshing");
         fetchData();
     }
 });
 
-// Handle offline/online events
 window.addEventListener('online', function() {
-    console.log("🌐 Internet connection restored");
-    showNotification("Connection restored", 'info');
+    console.log("🌐 Online - refreshing");
+    showNotification("Connection restored");
     fetchData();
 });
 
 window.addEventListener('offline', function() {
-    console.log("📴 Internet connection lost");
-    showNotification("Connection lost - using cached data", 'warning');
+    console.log("📴 Offline");
+    showNotification("Connection lost", 'warning');
 });
 
-// Make functions available globally for debugging
+// ==================== DEBUG FUNCTIONS ====================
 window.debugDashboard = {
     fetchData: fetchData,
     showDemoData: showDemoData,
@@ -888,8 +956,19 @@ window.debugDashboard = {
     },
     getRecords: function() {
         return realRecords;
+    },
+    showLoading: function(show) {
+        showLoading(show);
+    },
+    testFirebase: function() {
+        const url = `${FIREBASE_CONFIG.databaseURL}/plants/${currentDeviceId}/latest.json`;
+        console.log("🌐 Testing Firebase URL:", url);
+        fetch(url)
+            .then(r => r.json())
+            .then(data => console.log("Firebase response:", data))
+            .catch(err => console.error("Firebase error:", err));
     }
 };
 
-console.log("🎯 Dashboard script loaded successfully!");
-console.log("💡 Debug commands available: debugDashboard.fetchData(), debugDashboard.showDemoData()");
+console.log("🎯 Dashboard script loaded - ready!");
+console.log("💡 Debug: debugDashboard.fetchData(), debugDashboard.testFirebase()");
