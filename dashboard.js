@@ -1,6 +1,3 @@
-// dashboard.js - COMPLETE DASHBOARD WITH SINGLE BIG CHART CARD AND PAST RECORDS
-// For Arduino ESP32 with device ID: smart-plant-reminder
-
 const FIREBASE_CONFIG = {
     databaseURL: "https://smart-plant-watering-e2811-default-rtdb.firebaseio.com"
 };
@@ -116,14 +113,33 @@ async function fetchHistoryData() {
         const data = await response.json();
         
         if (data) {
-            // Convert to array and sort
-            const historyArray = Object.keys(data).map(key => ({
-                timestamp: new Date(data[key].timestamp || Date.now()),
-                moisture: parseFloat(data[key].moisture) || 0,
-                temperature: parseFloat(data[key].temperature) || 0,
-                humidity: parseFloat(data[key].humidity) || 0,
-                status: data[key].status || "UNKNOWN"
-            }));
+            // Convert to array with proper date parsing
+            const historyArray = Object.keys(data).map(key => {
+                let timestamp;
+                const dataPoint = data[key];
+                
+                if (dataPoint.timestamp) {
+                    timestamp = new Date(dataPoint.timestamp);
+                } else if (key && typeof key === 'string' && key.includes('-')) {
+                    // Try to parse from Firebase key
+                    timestamp = new Date(key.replace('_', ':').replace('_', ':'));
+                } else {
+                    timestamp = new Date();
+                }
+                
+                // Validate date
+                if (isNaN(timestamp.getTime())) {
+                    timestamp = new Date();
+                }
+                
+                return {
+                    timestamp: timestamp,
+                    moisture: parseFloat(dataPoint.moisture) || 0,
+                    temperature: parseFloat(dataPoint.temperature) || 0,
+                    humidity: parseFloat(dataPoint.humidity) || 0,
+                    status: dataPoint.status || "UNKNOWN"
+                };
+            });
             
             // Sort by timestamp
             historyArray.sort((a, b) => a.timestamp - b.timestamp);
@@ -132,6 +148,7 @@ async function fetchHistoryData() {
             allHistoryData = historyArray;
             
             console.log(`📊 History data loaded: ${historyArray.length} records`);
+            console.log("Sample timestamps:", historyArray.slice(0, 3).map(d => d.timestamp.toString()));
             
             // Update all charts
             updateAllCharts();
@@ -186,9 +203,24 @@ function processArduinoData(data) {
 }
 
 function addToHistoryData(data) {
-    // Add new data point
+    // Ensure timestamp is a valid Date object
+    let timestamp;
+    if (data.timestamp instanceof Date) {
+        timestamp = data.timestamp;
+    } else if (typeof data.timestamp === 'string' || typeof data.timestamp === 'number') {
+        timestamp = new Date(data.timestamp);
+    } else {
+        timestamp = new Date();
+    }
+    
+    // Check if date is valid
+    if (isNaN(timestamp.getTime())) {
+        console.warn("Invalid timestamp, using current time");
+        timestamp = new Date();
+    }
+    
     const historyPoint = {
-        timestamp: data.timestamp,
+        timestamp: timestamp,
         moisture: data.moisture,
         temperature: data.temperature,
         humidity: data.humidity
@@ -200,6 +232,9 @@ function addToHistoryData(data) {
     if (allHistoryData.length > 100) {
         allHistoryData.shift();
     }
+    
+    // Sort by timestamp to ensure proper order
+    allHistoryData.sort((a, b) => a.timestamp - b.timestamp);
 }
 
 // ==================== CHARTS INITIALIZATION ====================
@@ -375,11 +410,18 @@ function getChartOptions(title, unit, color) {
                     },
                     padding: 10,
                     callback: function(value, index, values) {
-                        if (this.getLabelForValue(value)) {
-                            const date = new Date(this.getLabelForValue(value));
+                        const label = this.getLabelForValue(value);
+                        if (!label || label === 'Invalid Date') return '';
+                        
+                        try {
+                            const date = new Date(label);
+                            if (isNaN(date.getTime())) return label;
+                            
+                            // Default format for initialization
                             return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        } catch (e) {
+                            return label;
                         }
-                        return '';
                     }
                 },
                 title: {
@@ -414,10 +456,42 @@ function updateChart(type, chart) {
         point.timestamp >= cutoffTime
     );
     
+    if (filteredData.length === 0) return;
+    
     // Prepare labels and data
-    const labels = filteredData.map(point => 
-        point.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})
-    );
+    const labels = filteredData.map(point => {
+        // Ensure timestamp is a Date object
+        const date = point.timestamp instanceof Date ? point.timestamp : new Date(point.timestamp);
+        
+        // Check if date is valid
+        if (isNaN(date.getTime())) {
+            return 'Invalid Date';
+        }
+        
+        // Format based on time range
+        if (minutes <= 60) {
+            // Show hours:minutes:seconds for short ranges
+            return date.toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit'
+            });
+        } else if (minutes <= 360) {
+            // Show hours:minutes for medium ranges
+            return date.toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit'
+            });
+        } else {
+            // Show date + time for long ranges
+            return date.toLocaleString([], { 
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit', 
+                minute: '2-digit'
+            });
+        }
+    });
     
     const data = filteredData.map(point => {
         if (type === 'moisture') return point.moisture;
@@ -429,6 +503,66 @@ function updateChart(type, chart) {
     // Update chart
     chart.data.labels = labels;
     chart.data.datasets[0].data = data;
+    
+    // Update x-axis configuration based on time range
+    const xAxisConfig = chart.options.scales.x;
+    
+    if (minutes <= 60) {
+        xAxisConfig.ticks.callback = function(value, index, values) {
+            const label = this.getLabelForValue(value);
+            if (!label || label === 'Invalid Date') return '';
+            
+            // For short ranges, show time with seconds
+            try {
+                const date = new Date(label);
+                if (isNaN(date.getTime())) return label;
+                return date.toLocaleTimeString([], { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            } catch (e) {
+                return label;
+            }
+        };
+    } else if (minutes <= 360) {
+        xAxisConfig.ticks.callback = function(value, index, values) {
+            const label = this.getLabelForValue(value);
+            if (!label || label === 'Invalid Date') return '';
+            
+            // For medium ranges, show time without seconds
+            try {
+                const date = new Date(label);
+                if (isNaN(date.getTime())) return label;
+                return date.toLocaleTimeString([], { 
+                    hour: '2-digit', 
+                    minute: '2-digit'
+                });
+            } catch (e) {
+                return label;
+            }
+        };
+    } else {
+        xAxisConfig.ticks.callback = function(value, index, values) {
+            const label = this.getLabelForValue(value);
+            if (!label || label === 'Invalid Date') return '';
+            
+            // For long ranges, show date and time
+            try {
+                const date = new Date(label);
+                if (isNaN(date.getTime())) return label;
+                return date.toLocaleString([], { 
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit', 
+                    minute: '2-digit'
+                });
+            } catch (e) {
+                return label;
+            }
+        };
+    }
+    
     chart.update();
 }
 
@@ -1062,6 +1196,33 @@ window.debug = {
             localStorage.removeItem(`plant_past_records_${currentDeviceId}`);
             showNotification("All data cleared", "info");
         }
+    },
+    // Debug date function
+    debugDates: function() {
+        console.log("=== Date Debug Information ===");
+        console.log("Current time:", new Date().toString());
+        console.log("History data length:", allHistoryData.length);
+        
+        if (allHistoryData.length > 0) {
+            console.log("First 5 timestamps:");
+            allHistoryData.slice(0, 5).forEach((point, i) => {
+                console.log(`[${i}]`, point.timestamp.toString(), 
+                    "Valid:", !isNaN(point.timestamp.getTime()),
+                    "Type:", typeof point.timestamp,
+                    "Instanceof Date:", point.timestamp instanceof Date);
+            });
+            
+            console.log("Last 5 timestamps:");
+            allHistoryData.slice(-5).forEach((point, i) => {
+                console.log(`[${i}]`, point.timestamp.toString(), 
+                    "Valid:", !isNaN(point.timestamp.getTime()));
+            });
+        }
+        
+        // Check chart data
+        if (moistureHistoryChart) {
+            console.log("Moisture chart labels:", moistureHistoryChart.data.labels.slice(0, 5));
+        }
     }
 };
 
@@ -1071,6 +1232,7 @@ console.log("📊 Features: Single Big Chart Card + Past Records System");
 console.log("📱 Device ID:", currentDeviceId);
 console.log("🔄 Auto-refresh: 60 seconds (1 minute)");
 console.log("💾 Storage: Past records saved to localStorage");
+console.log("📅 Date Fix: Proper date handling for charts");
 console.log("💡 Debug commands:");
 console.log("  - debug.fetchData()      - Manual refresh");
 console.log("  - debug.testFirebase()   - Test Firebase");
@@ -1078,6 +1240,7 @@ console.log("  - debug.getData()        - View current data");
 console.log("  - debug.getRecords()     - View recent records");
 console.log("  - debug.getPastRecords() - View all past records");
 console.log("  - debug.clearAllData()   - Clear all data");
+console.log("  - debug.debugDates()     - Debug date issues");
 
 // Initial state
 updateElement('statusIndicator', 'CONNECTING...');
