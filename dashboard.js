@@ -17,7 +17,7 @@ let moistureHistoryChart = null;
 let temperatureHistoryChart = null;
 let humidityHistoryChart = null;
 let countdownInterval = null;
-let currentCountdown = 10;
+let currentCountdown = 60; // CHANGED FROM 10 TO 60
 let updateInterval = null;
 
 // Chart configurations
@@ -42,6 +42,9 @@ function initializeDashboard() {
     updateElement('deviceId', currentDeviceId);
     updateElement('refreshDeviceId', currentDeviceId);
     
+    // Update interval info
+    updateElement('refreshCountdown', 'Next refresh in: 60 seconds');
+    
     // Hide loading
     setTimeout(() => {
         document.getElementById('loadingOverlay').classList.add('hidden');
@@ -61,13 +64,14 @@ function initializeDashboard() {
     // Load existing past records from localStorage
     loadPastRecordsFromStorage();
     
-    // Auto refresh every 10 seconds
+    // Auto refresh every 60 seconds (1 minute) - CHANGED FROM 10 SECONDS
     startAutoRefresh();
     
     // Countdown timer
     startCountdownTimer();
     
     console.log("✅ Dashboard initialized with past records system");
+    console.log("🔄 Auto-refresh interval: 60 seconds");
 }
 
 // ==================== FIREBASE DATA FETCHING ====================
@@ -76,7 +80,7 @@ async function fetchLiveData() {
         const firebasePath = `/plants/${currentDeviceId}/latest.json`;
         const url = `${FIREBASE_CONFIG.databaseURL}${firebasePath}?t=${Date.now()}`;
         
-        console.log("📡 Fetching:", url);
+        console.log("📡 Fetching live data:", url);
         
         const response = await fetch(url);
         
@@ -91,7 +95,7 @@ async function fetchLiveData() {
             return;
         }
         
-        console.log("✅ Live data:", data);
+        console.log("✅ Live data received:", data);
         processArduinoData(data);
         resetCountdown();
         
@@ -105,6 +109,8 @@ async function fetchHistoryData() {
     try {
         // Fetch last 50 records for charts
         const url = `${FIREBASE_CONFIG.databaseURL}/plants/${currentDeviceId}/history.json?orderBy="$key"&limitToLast=50`;
+        
+        console.log("📡 Fetching history data...");
         
         const response = await fetch(url);
         const data = await response.json();
@@ -125,8 +131,12 @@ async function fetchHistoryData() {
             // Store in global variable
             allHistoryData = historyArray;
             
+            console.log(`📊 History data loaded: ${historyArray.length} records`);
+            
             // Update all charts
             updateAllCharts();
+        } else {
+            console.log("📊 No history data found");
         }
     } catch (error) {
         console.log("History fetch error:", error);
@@ -154,12 +164,12 @@ function processArduinoData(data) {
         timestamp: new Date()
     };
     
-    console.log("📊 Processed:", processedData);
+    console.log("📊 Processed data:", processedData);
     
     // Update dashboard
     updateDashboard(processedData);
     
-    // Add to recent records
+    // Add to recent records (WITH DATE)
     addToRecords(processedData);
     
     // Add to past records (permanent)
@@ -172,7 +182,7 @@ function processArduinoData(data) {
     updateGauge(moisture);
     updateAllCharts();
     
-    showNotification("Data updated", "success");
+    showNotification("Data updated successfully", "success");
 }
 
 function addToHistoryData(data) {
@@ -468,10 +478,16 @@ function updateGauge(percentage) {
     moistureGauge.update();
 }
 
-// ==================== RECENT RECORDS TABLE ====================
+// ==================== RECENT RECORDS TABLE (WITH DATE) ====================
 function addToRecords(data) {
+    const now = new Date();
     const record = {
-        timestamp: new Date().toLocaleTimeString([], {
+        date: now.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        }),
+        time: now.toLocaleTimeString([], {
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit',
@@ -501,7 +517,7 @@ function updateRecordsTable() {
     if (records.length === 0) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="5" style="text-align: center; padding: 30px; color: #718096;">
+                <td colspan="6" style="text-align: center; padding: 30px; color: #718096;">
                     <i class="fas fa-spinner fa-spin" style="margin-right: 10px;"></i>
                     Waiting for Arduino data...
                 </td>
@@ -535,7 +551,8 @@ function updateRecordsTable() {
         
         html += `
             <tr>
-                <td class="timestamp-col">${record.timestamp}</td>
+                <td class="date-col">${record.date}</td>
+                <td class="timestamp-col">${record.time}</td>
                 <td class="percent-col ${moistureClass}">${record.moisture.toFixed(1)}%</td>
                 <td class="value-col">${record.temperature.toFixed(2)}°C</td>
                 <td class="percent-col">${record.humidity.toFixed(2)}%</td>
@@ -552,14 +569,15 @@ function updateRecordsTable() {
 
 // ==================== PAST RECORDS FUNCTIONS ====================
 function addToPastRecords(data) {
+    const now = new Date();
     const pastRecord = {
         id: Date.now(), // Unique ID
-        date: new Date().toLocaleDateString('en-US', {
+        date: now.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
             day: 'numeric'
         }),
-        time: new Date().toLocaleTimeString([], {
+        time: now.toLocaleTimeString([], {
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit',
@@ -570,7 +588,7 @@ function addToPastRecords(data) {
         humidity: data.humidity,
         status: data.status,
         rawValue: data.rawValue,
-        fullTimestamp: new Date(),
+        fullTimestamp: now,
         deviceId: data.deviceId
     };
     
@@ -640,7 +658,7 @@ function updatePastRecordsTable() {
         
         html += `
             <tr>
-                <td class="timestamp-col">${record.date}</td>
+                <td class="date-col">${record.date}</td>
                 <td class="timestamp-col">${record.time}</td>
                 <td class="percent-col ${moistureClass}">${record.moisture.toFixed(1)}%</td>
                 <td class="value-col">${record.temperature.toFixed(2)}°C</td>
@@ -711,7 +729,12 @@ function updateDashboard(data) {
         second: '2-digit',
         hour12: true
     });
-    updateElement('lastUpdate', timeStr);
+    const dateStr = now.toLocaleDateString([], {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+    updateElement('lastUpdate', `${dateStr} ${timeStr}`);
     
     currentData = data;
 }
@@ -745,11 +768,11 @@ function updateElement(id, value) {
     }
 }
 
-// ==================== TIMER FUNCTIONS ====================
+// ==================== TIMER FUNCTIONS (UPDATED TO 60 SECONDS) ====================
 function startCountdownTimer() {
     if (countdownInterval) clearInterval(countdownInterval);
     
-    currentCountdown = 10;
+    currentCountdown = 60; // CHANGED FROM 10 TO 60
     updateCountdownDisplay();
     
     countdownInterval = setInterval(() => {
@@ -758,13 +781,13 @@ function startCountdownTimer() {
         
         if (currentCountdown <= 0) {
             fetchLiveData();
-            currentCountdown = 10;
+            currentCountdown = 60; // CHANGED FROM 10 TO 60
         }
     }, 1000);
 }
 
 function resetCountdown() {
-    currentCountdown = 10;
+    currentCountdown = 60; // CHANGED FROM 10 TO 60
     updateCountdownDisplay();
 }
 
@@ -775,7 +798,13 @@ function updateCountdownDisplay() {
     // Color coding for low countdown
     const countdownEl = document.getElementById('countdownValue');
     if (countdownEl) {
-        countdownEl.style.color = currentCountdown <= 3 ? '#ff6b6b' : '#667eea';
+        if (currentCountdown <= 10) {
+            countdownEl.style.color = '#ff6b6b';
+        } else if (currentCountdown <= 30) {
+            countdownEl.style.color = '#ffa94d';
+        } else {
+            countdownEl.style.color = '#667eea';
+        }
     }
 }
 
@@ -785,7 +814,7 @@ function startAutoRefresh() {
     updateInterval = setInterval(() => {
         console.log("🔄 Auto-refresh triggered");
         fetchLiveData();
-    }, 10000);
+    }, 60000); // CHANGED FROM 10000 TO 60000 (1 MINUTE)
 }
 
 // ==================== EVENT LISTENERS ====================
@@ -814,9 +843,10 @@ function exportRecentToCSV() {
         return;
     }
     
-    const headers = ["Timestamp", "Moisture (%)", "Temperature (°C)", "Humidity (%)", "Status", "Raw Value"];
+    const headers = ["Date", "Time", "Moisture (%)", "Temperature (°C)", "Humidity (%)", "Status", "Raw Value"];
     const rows = records.map(record => [
-        `"${record.timestamp}"`,
+        `"${record.date}"`,
+        `"${record.time}"`,
         record.moisture.toFixed(1),
         record.temperature.toFixed(2),
         record.humidity.toFixed(2),
@@ -1039,7 +1069,7 @@ window.debug = {
 console.log("🚀 Smart Plant Dashboard v4.0");
 console.log("📊 Features: Single Big Chart Card + Past Records System");
 console.log("📱 Device ID:", currentDeviceId);
-console.log("🔄 Auto-refresh: 10 seconds");
+console.log("🔄 Auto-refresh: 60 seconds (1 minute)");
 console.log("💾 Storage: Past records saved to localStorage");
 console.log("💡 Debug commands:");
 console.log("  - debug.fetchData()      - Manual refresh");
@@ -1056,3 +1086,4 @@ document.getElementById('statusIndicator').className = 'status-indicator status-
 // Initial UI updates
 updateElement('deviceId', currentDeviceId);
 updateElement('refreshDeviceId', currentDeviceId);
+updateElement('refreshCountdown', 'Next refresh in: 60 seconds');
