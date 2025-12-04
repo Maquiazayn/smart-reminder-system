@@ -1,4 +1,4 @@
-// dashboard.js - COMPLETE DASHBOARD WITH MULTIPLE CHARTS
+// dashboard.js - COMPLETE DASHBOARD WITH SINGLE BIG CHART CARD AND PAST RECORDS
 // For Arduino ESP32 with device ID: smart-plant-reminder
 
 const FIREBASE_CONFIG = {
@@ -7,8 +7,10 @@ const FIREBASE_CONFIG = {
 
 // Global variables
 let currentDeviceId = "smart-plant-reminder";
-let records = [];
-let allHistoryData = []; // Store all historical data
+let records = []; // For recent records (10 items)
+let pastRecords = []; // For permanent past records
+let pastRecordsLimit = 50;
+let allHistoryData = []; // Store all historical data for charts
 let currentData = null;
 let moistureGauge = null;
 let moistureHistoryChart = null;
@@ -27,7 +29,7 @@ let chartRanges = {
 
 // ==================== INITIALIZATION ====================
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("🌱 Dashboard loading with multiple charts...");
+    console.log("🌱 Dashboard loading with single chart card and past records...");
     initializeDashboard();
 });
 
@@ -56,13 +58,16 @@ function initializeDashboard() {
     fetchLiveData();
     fetchHistoryData(); // Get historical data for charts
     
+    // Load existing past records from localStorage
+    loadPastRecordsFromStorage();
+    
     // Auto refresh every 10 seconds
     startAutoRefresh();
     
     // Countdown timer
     startCountdownTimer();
     
-    console.log("✅ Dashboard initialized with 3 charts");
+    console.log("✅ Dashboard initialized with past records system");
 }
 
 // ==================== FIREBASE DATA FETCHING ====================
@@ -154,8 +159,11 @@ function processArduinoData(data) {
     // Update dashboard
     updateDashboard(processedData);
     
-    // Add to records
+    // Add to recent records
     addToRecords(processedData);
+    
+    // Add to past records (permanent)
+    addToPastRecords(processedData);
     
     // Add to history data for charts
     addToHistoryData(processedData);
@@ -236,7 +244,7 @@ function initializeHistoryCharts() {
                     pointBackgroundColor: '#667eea'
                 }]
             },
-            options: getChartOptions('Moisture (%)', '%')
+            options: getChartOptions('Moisture (%)', '%', '#667eea')
         });
     }
     
@@ -261,7 +269,7 @@ function initializeHistoryCharts() {
                     pointBackgroundColor: '#ff6b6b'
                 }]
             },
-            options: getChartOptions('Temperature (°C)', '°C')
+            options: getChartOptions('Temperature (°C)', '°C', '#ff6b6b')
         });
     }
     
@@ -286,39 +294,76 @@ function initializeHistoryCharts() {
                     pointBackgroundColor: '#4CAF50'
                 }]
             },
-            options: getChartOptions('Humidity (%)', '%')
+            options: getChartOptions('Humidity (%)', '%', '#4CAF50')
         });
     }
 }
 
-function getChartOptions(title, unit) {
+function getChartOptions(title, unit, color) {
     return {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-            legend: { display: true },
+            legend: { 
+                display: true,
+                labels: {
+                    font: {
+                        size: 13,
+                        weight: 'bold'
+                    }
+                }
+            },
             tooltip: {
                 callbacks: {
                     label: function(context) {
                         return `${context.dataset.label}: ${context.parsed.y.toFixed(1)}${unit}`;
                     }
+                },
+                titleFont: {
+                    size: 12
+                },
+                bodyFont: {
+                    size: 12
                 }
             }
         },
         scales: {
             y: {
                 beginAtZero: false,
-                grid: { color: 'rgba(0,0,0,0.05)' },
+                grid: { 
+                    color: 'rgba(0,0,0,0.05)',
+                    drawBorder: false
+                },
                 ticks: { 
                     callback: value => value + unit,
-                    font: { size: 11 }
+                    font: { 
+                        size: 12,
+                        weight: 'bold'
+                    },
+                    padding: 10
+                },
+                title: {
+                    display: true,
+                    text: title,
+                    font: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    color: color
                 }
             },
             x: {
-                grid: { color: 'rgba(0,0,0,0.05)' },
+                grid: { 
+                    color: 'rgba(0,0,0,0.05)',
+                    drawBorder: false
+                },
                 ticks: { 
                     maxTicksLimit: 8,
-                    font: { size: 10 },
+                    font: { 
+                        size: 11,
+                        weight: 'bold'
+                    },
+                    padding: 10,
                     callback: function(value, index, values) {
                         if (this.getLabelForValue(value)) {
                             const date = new Date(this.getLabelForValue(value));
@@ -326,6 +371,15 @@ function getChartOptions(title, unit) {
                         }
                         return '';
                     }
+                },
+                title: {
+                    display: true,
+                    text: 'Time',
+                    font: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    color: '#4a5568'
                 }
             }
         }
@@ -369,6 +423,22 @@ function updateChart(type, chart) {
 }
 
 // Global function for chart range updates
+window.updateAllChartRanges = function(minutes) {
+    chartRanges.moisture = minutes;
+    chartRanges.temperature = minutes;
+    chartRanges.humidity = minutes;
+    
+    updateAllCharts();
+    
+    // Update time range text
+    if (document.getElementById('timeRange')) {
+        document.getElementById('timeRange').textContent = `Showing last ${minutes} minutes`;
+    }
+    
+    showNotification(`Charts updated: Showing last ${minutes} minutes`, "info");
+};
+
+// Keep the old function for backward compatibility
 window.updateChartRange = function(chartType, minutes) {
     chartRanges[chartType] = minutes;
     updateChart(chartType, getChartInstance(chartType));
@@ -396,6 +466,222 @@ function updateGauge(percentage) {
     moistureGauge.data.datasets[0].data = [percentage, 100 - percentage];
     moistureGauge.data.datasets[0].backgroundColor = [gaugeColor, '#e9ecef'];
     moistureGauge.update();
+}
+
+// ==================== RECENT RECORDS TABLE ====================
+function addToRecords(data) {
+    const record = {
+        timestamp: new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        }),
+        moisture: data.moisture,
+        temperature: data.temperature,
+        humidity: data.humidity,
+        status: data.status,
+        rawValue: data.rawValue
+    };
+    
+    records.unshift(record);
+    
+    // Keep only last 10 records
+    if (records.length > 10) {
+        records.pop();
+    }
+    
+    updateRecordsTable();
+}
+
+function updateRecordsTable() {
+    const tableBody = document.getElementById('recordsTableBody');
+    if (!tableBody) return;
+    
+    if (records.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 30px; color: #718096;">
+                    <i class="fas fa-spinner fa-spin" style="margin-right: 10px;"></i>
+                    Waiting for Arduino data...
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    let html = '';
+    
+    records.forEach(record => {
+        let moistureClass = '';
+        let statusClass = '';
+        
+        if (record.moisture < 20) {
+            moistureClass = 'water-level-low';
+            statusClass = 'status-need-water-badge';
+        } else if (record.moisture < 35) {
+            moistureClass = 'water-level-low';
+            statusClass = 'status-low-badge';
+        } else if (record.moisture < 65) {
+            moistureClass = 'water-level-ok';
+            statusClass = 'status-ok-badge';
+        } else if (record.moisture < 85) {
+            moistureClass = 'water-level-moist';
+            statusClass = 'status-moist-badge';
+        } else {
+            moistureClass = 'water-level-high';
+            statusClass = 'status-too-wet-badge';
+        }
+        
+        html += `
+            <tr>
+                <td class="timestamp-col">${record.timestamp}</td>
+                <td class="percent-col ${moistureClass}">${record.moisture.toFixed(1)}%</td>
+                <td class="value-col">${record.temperature.toFixed(2)}°C</td>
+                <td class="percent-col">${record.humidity.toFixed(2)}%</td>
+                <td class="status-col">
+                    <span class="status-badge ${statusClass}">${record.status}</span>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableBody.innerHTML = html;
+    updateElement('recordCount', records.length);
+}
+
+// ==================== PAST RECORDS FUNCTIONS ====================
+function addToPastRecords(data) {
+    const pastRecord = {
+        id: Date.now(), // Unique ID
+        date: new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        }),
+        time: new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        }),
+        moisture: data.moisture,
+        temperature: data.temperature,
+        humidity: data.humidity,
+        status: data.status,
+        rawValue: data.rawValue,
+        fullTimestamp: new Date(),
+        deviceId: data.deviceId
+    };
+    
+    pastRecords.unshift(pastRecord);
+    
+    // Keep only limited number of past records
+    if (pastRecords.length > pastRecordsLimit) {
+        pastRecords.pop();
+    }
+    
+    // Save to localStorage
+    savePastRecordsToStorage();
+    
+    updatePastRecordsTable();
+}
+
+function updatePastRecordsTable() {
+    const tableBody = document.getElementById('pastRecordsTableBody');
+    if (!tableBody) return;
+    
+    if (pastRecords.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 40px; color: #718096;">
+                    <i class="fas fa-database" style="margin-right: 10px; font-size: 2rem;"></i>
+                    <div style="margin-top: 10px; font-size: 1.2rem;">
+                        No past records yet. Data will appear here automatically.
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    let html = '';
+    
+    pastRecords.forEach(record => {
+        let statusClass = '';
+        
+        if (record.status.includes("NEED WATER")) {
+            statusClass = 'status-need-water-badge';
+        } else if (record.status.includes("LOW")) {
+            statusClass = 'status-low-badge';
+        } else if (record.status.includes("OK")) {
+            statusClass = 'status-ok-badge';
+        } else if (record.status.includes("MOIST")) {
+            statusClass = 'status-moist-badge';
+        } else if (record.status.includes("TOO WET")) {
+            statusClass = 'status-too-wet-badge';
+        } else {
+            statusClass = '';
+        }
+        
+        // Determine moisture color class
+        let moistureClass = '';
+        if (record.moisture < 20) {
+            moistureClass = 'water-level-low';
+        } else if (record.moisture < 35) {
+            moistureClass = 'water-level-low';
+        } else if (record.moisture < 65) {
+            moistureClass = 'water-level-ok';
+        } else if (record.moisture < 85) {
+            moistureClass = 'water-level-moist';
+        } else {
+            moistureClass = 'water-level-high';
+        }
+        
+        html += `
+            <tr>
+                <td class="timestamp-col">${record.date}</td>
+                <td class="timestamp-col">${record.time}</td>
+                <td class="percent-col ${moistureClass}">${record.moisture.toFixed(1)}%</td>
+                <td class="value-col">${record.temperature.toFixed(2)}°C</td>
+                <td class="percent-col">${record.humidity.toFixed(2)}%</td>
+                <td class="status-col">
+                    <span class="status-badge ${statusClass}">${record.status}</span>
+                </td>
+                <td class="value-col">${record.rawValue}</td>
+            </tr>
+        `;
+    });
+    
+    tableBody.innerHTML = html;
+    updateElement('pastRecordCount', pastRecords.length);
+}
+
+function savePastRecordsToStorage() {
+    try {
+        // Save to localStorage with device ID as key
+        const storageKey = `plant_past_records_${currentDeviceId}`;
+        localStorage.setItem(storageKey, JSON.stringify(pastRecords));
+        console.log("💾 Saved past records to localStorage:", pastRecords.length, "records");
+    } catch (error) {
+        console.error("❌ Error saving to localStorage:", error);
+    }
+}
+
+function loadPastRecordsFromStorage() {
+    try {
+        const storageKey = `plant_past_records_${currentDeviceId}`;
+        const storedData = localStorage.getItem(storageKey);
+        
+        if (storedData) {
+            pastRecords = JSON.parse(storedData);
+            console.log("📂 Loaded past records from localStorage:", pastRecords.length, "records");
+            updatePastRecordsTable();
+        }
+    } catch (error) {
+        console.error("❌ Error loading from localStorage:", error);
+        pastRecords = [];
+    }
 }
 
 // ==================== UI UPDATES ====================
@@ -459,86 +745,6 @@ function updateElement(id, value) {
     }
 }
 
-// ==================== RECORDS TABLE ====================
-function addToRecords(data) {
-    const record = {
-        timestamp: new Date().toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true
-        }),
-        moisture: data.moisture,
-        temperature: data.temperature,
-        humidity: data.humidity,
-        status: data.status,
-        rawValue: data.rawValue
-    };
-    
-    records.unshift(record);
-    
-    if (records.length > 10) {
-        records.pop();
-    }
-    
-    updateRecordsTable();
-}
-
-function updateRecordsTable() {
-    const tableBody = document.getElementById('recordsTableBody');
-    if (!tableBody) return;
-    
-    if (records.length === 0) {
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="5" style="text-align: center; padding: 30px; color: #718096;">
-                    Waiting for Arduino data...
-                </td>
-            </tr>
-        `;
-        return;
-    }
-    
-    let html = '';
-    
-    records.forEach(record => {
-        let moistureClass = '';
-        let statusClass = '';
-        
-        if (record.moisture < 20) {
-            moistureClass = 'water-level-low';
-            statusClass = 'status-need-water-badge';
-        } else if (record.moisture < 35) {
-            moistureClass = 'water-level-low';
-            statusClass = 'status-low-badge';
-        } else if (record.moisture < 65) {
-            moistureClass = 'water-level-ok';
-            statusClass = 'status-ok-badge';
-        } else if (record.moisture < 85) {
-            moistureClass = 'water-level-moist';
-            statusClass = 'status-moist-badge';
-        } else {
-            moistureClass = 'water-level-high';
-            statusClass = 'status-too-wet-badge';
-        }
-        
-        html += `
-            <tr>
-                <td class="timestamp-col">${record.timestamp}</td>
-                <td class="percent-col ${moistureClass}">${record.moisture.toFixed(1)}%</td>
-                <td class="value-col">${record.temperature.toFixed(2)}°C</td>
-                <td class="percent-col">${record.humidity.toFixed(2)}%</td>
-                <td class="status-col">
-                    <span class="status-badge ${statusClass}">${record.status}</span>
-                </td>
-            </tr>
-        `;
-    });
-    
-    tableBody.innerHTML = html;
-    updateElement('recordCount', records.length);
-}
-
 // ==================== TIMER FUNCTIONS ====================
 function startCountdownTimer() {
     if (countdownInterval) clearInterval(countdownInterval);
@@ -565,38 +771,46 @@ function resetCountdown() {
 function updateCountdownDisplay() {
     updateElement('countdownValue', currentCountdown);
     updateElement('refreshCountdown', `Next refresh in: ${currentCountdown} seconds`);
+    
+    // Color coding for low countdown
+    const countdownEl = document.getElementById('countdownValue');
+    if (countdownEl) {
+        countdownEl.style.color = currentCountdown <= 3 ? '#ff6b6b' : '#667eea';
+    }
 }
 
 function startAutoRefresh() {
     if (updateInterval) clearInterval(updateInterval);
     
     updateInterval = setInterval(() => {
+        console.log("🔄 Auto-refresh triggered");
         fetchLiveData();
     }, 10000);
 }
 
 // ==================== EVENT LISTENERS ====================
 function setupEventListeners() {
-    // Export CSV
+    // Export CSV button
     const exportBtn = document.getElementById('exportBtn');
     if (exportBtn) {
-        exportBtn.addEventListener('click', exportToCSV);
+        exportBtn.addEventListener('click', exportRecentToCSV);
     }
     
-    // Manual refresh
+    // Manual refresh button
     const refreshBtn = document.querySelector('.refresh-btn');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', () => {
+            console.log("🔄 Manual refresh requested");
             fetchLiveData();
-            showNotification("Manual refresh", "info");
+            showNotification("Manual refresh started...", "info");
         });
     }
 }
 
-// ==================== EXPORT FUNCTION ====================
-function exportToCSV() {
+// ==================== EXPORT FUNCTIONS ====================
+function exportRecentToCSV() {
     if (records.length === 0) {
-        showNotification("No data to export", "warning");
+        showNotification("No recent data to export", "warning");
         return;
     }
     
@@ -610,21 +824,71 @@ function exportToCSV() {
         record.rawValue
     ]);
     
+    exportCSV(headers, rows, `plant-recent-data-${currentDeviceId}-${new Date().toISOString().slice(0,10)}.csv`, records.length, "recent");
+}
+
+// Function to export all past records
+window.exportAllRecords = function() {
+    if (pastRecords.length === 0) {
+        showNotification("No past records to export", "warning");
+        return;
+    }
+    
+    const headers = ["Date", "Time", "Moisture (%)", "Temperature (°C)", "Humidity (%)", "Status", "Raw Value", "Device ID"];
+    const rows = pastRecords.map(record => [
+        `"${record.date}"`,
+        `"${record.time}"`,
+        record.moisture.toFixed(1),
+        record.temperature.toFixed(2),
+        record.humidity.toFixed(2),
+        `"${record.status}"`,
+        record.rawValue,
+        `"${record.deviceId || currentDeviceId}"`
+    ]);
+    
+    exportCSV(headers, rows, `plant-all-records-${currentDeviceId}-${new Date().toISOString().slice(0,10)}.csv`, pastRecords.length, "all");
+};
+
+function exportCSV(headers, rows, filename, count, type) {
     const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     
     link.href = url;
-    link.download = `plant-data-${currentDeviceId}-${new Date().toISOString().slice(0,10)}.csv`;
+    link.download = filename;
     link.style.display = 'none';
     
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     
-    showNotification(`Exported ${records.length} records`, "success");
+    showNotification(`Exported ${count} ${type} records to CSV`, "success");
 }
+
+// ==================== PAST RECORDS MANAGEMENT ====================
+window.loadMorePastRecords = function() {
+    pastRecordsLimit += 50;
+    showNotification(`Now showing up to ${pastRecordsLimit} past records`, "info");
+    
+    // Update table if we have more records than limit
+    if (pastRecords.length > pastRecordsLimit) {
+        pastRecords = pastRecords.slice(0, pastRecordsLimit);
+    }
+    
+    updatePastRecordsTable();
+    savePastRecordsToStorage();
+};
+
+window.clearPastRecords = function() {
+    if (confirm("Are you sure you want to clear ALL past records?\n\nThis action cannot be undone and will delete all historical data from this device.")) {
+        pastRecords = [];
+        pastRecordsLimit = 50;
+        savePastRecordsToStorage();
+        updatePastRecordsTable();
+        showNotification("All past records cleared", "info");
+    }
+};
 
 // ==================== ERROR HANDLING ====================
 function showNoDataWarning() {
@@ -637,7 +901,7 @@ function showNoDataWarning() {
     const statusEl = document.getElementById('statusIndicator');
     if (statusEl) statusEl.className = 'status-indicator status-unknown';
     
-    showNotification("No data from Arduino", "warning");
+    showNotification("No data received from Arduino", "warning");
 }
 
 function showConnectionError() {
@@ -649,16 +913,20 @@ function showConnectionError() {
     
     const statusEl = document.getElementById('statusIndicator');
     if (statusEl) statusEl.className = 'status-indicator status-error';
+    
+    showNotification("Connection error. Retrying...", "error");
 }
 
 // ==================== NOTIFICATION SYSTEM ====================
 function showNotification(message, type = 'info') {
+    // Remove existing notifications
     document.querySelectorAll('.notification').forEach(el => el.remove());
     
     const notification = document.createElement('div');
     notification.className = 'notification';
     notification.textContent = message;
     
+    // Styling
     notification.style.cssText = `
         position: fixed;
         top: 20px;
@@ -672,20 +940,34 @@ function showNotification(message, type = 'info') {
         animation: slideIn 0.3s ease;
     `;
     
+    // Colors based on type
     switch(type) {
-        case 'success': notification.style.backgroundColor = '#4CAF50'; break;
-        case 'warning': notification.style.backgroundColor = '#ffa94d'; break;
-        case 'error': notification.style.backgroundColor = '#ff6b6b'; break;
-        default: notification.style.backgroundColor = '#667eea';
+        case 'success': 
+            notification.style.backgroundColor = '#4CAF50'; 
+            break;
+        case 'warning': 
+            notification.style.backgroundColor = '#ffa94d'; 
+            break;
+        case 'error': 
+            notification.style.backgroundColor = '#ff6b6b'; 
+            break;
+        default: 
+            notification.style.backgroundColor = '#667eea';
     }
     
     document.body.appendChild(notification);
     
+    // Auto-remove after 3 seconds
     setTimeout(() => {
         notification.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => notification.remove(), 300);
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 300);
     }, 3000);
     
+    // Add animation styles if needed
     if (!document.querySelector('#notification-animations')) {
         const style = document.createElement('style');
         style.id = 'notification-animations';
@@ -706,30 +988,71 @@ function showNotification(message, type = 'info') {
 // ==================== DEBUG FUNCTIONS ====================
 window.debug = {
     fetchData: fetchLiveData,
+    showDemo: function() {
+        const demoData = {
+            moisture: Math.floor(Math.random() * 100),
+            temperature: 25.00 + (Math.random() * 5),
+            humidity: 50.00 + (Math.random() * 20),
+            rawValue: Math.floor(1500 + (Math.random() * 2000)),
+            status: "OK",
+            deviceId: currentDeviceId
+        };
+        
+        processArduinoData(demoData);
+        showNotification("Demo data loaded", "info");
+    },
     testFirebase: async function() {
+        console.log("🧪 Testing Firebase connection...");
         const url = `${FIREBASE_CONFIG.databaseURL}/plants/${currentDeviceId}/latest.json`;
-        console.log("Testing:", url);
+        console.log("URL:", url);
         
         try {
             const response = await fetch(url);
             const data = await response.json();
             console.log("Firebase Data:", data);
+            showNotification("Firebase test successful", "success");
             return data;
         } catch (error) {
             console.error("Error:", error);
+            showNotification("Firebase test failed", "error");
             return null;
         }
     },
     getData: () => currentData,
-    getRecords: () => records
+    getRecords: () => records,
+    getPastRecords: () => pastRecords,
+    clearAllData: function() {
+        if (confirm("Clear ALL data including past records?")) {
+            records = [];
+            pastRecords = [];
+            allHistoryData = [];
+            updateRecordsTable();
+            updatePastRecordsTable();
+            updateAllCharts();
+            localStorage.removeItem(`plant_past_records_${currentDeviceId}`);
+            showNotification("All data cleared", "info");
+        }
+    }
 };
 
 // ==================== STARTUP ====================
-console.log("🚀 Smart Plant Dashboard v3.0");
-console.log("📊 Features: 3 Charts + Data Table");
+console.log("🚀 Smart Plant Dashboard v4.0");
+console.log("📊 Features: Single Big Chart Card + Past Records System");
 console.log("📱 Device ID:", currentDeviceId);
-console.log("🔄 Refresh: 10 seconds");
+console.log("🔄 Auto-refresh: 10 seconds");
+console.log("💾 Storage: Past records saved to localStorage");
+console.log("💡 Debug commands:");
+console.log("  - debug.fetchData()      - Manual refresh");
+console.log("  - debug.testFirebase()   - Test Firebase");
+console.log("  - debug.getData()        - View current data");
+console.log("  - debug.getRecords()     - View recent records");
+console.log("  - debug.getPastRecords() - View all past records");
+console.log("  - debug.clearAllData()   - Clear all data");
 
 // Initial state
 updateElement('statusIndicator', 'CONNECTING...');
 document.getElementById('statusIndicator').className = 'status-indicator status-unknown';
+
+// Initial UI updates
+updateElement('deviceId', currentDeviceId);
+updateElement('refreshDeviceId', currentDeviceId);
