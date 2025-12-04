@@ -17,18 +17,18 @@
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 20px;
+            padding: 30px;
         }
 
         /* Status Indicator Styles */
         .status-indicator {
-            padding: 10px 20px;
-            border-radius: 25px;
+            padding: 15px 30px;
+            border-radius: 30px;
             font-weight: 700;
-            font-size: 1.1rem;
+            font-size: 1.4rem;
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-top: 10px;
+            margin-top: 15px;
             display: inline-block;
         }
 
@@ -71,13 +71,13 @@
         /* Table Status Badges */
         .status-badge {
             display: inline-block;
-            padding: 8px 16px;
-            border-radius: 20px;
+            padding: 10px 20px;
+            border-radius: 25px;
             font-weight: 600;
-            font-size: 0.85rem;
+            font-size: 1rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            min-width: 100px;
+            min-width: 120px;
         }
 
         .status-need-water-badge {
@@ -109,21 +109,25 @@
         .water-level-low {
             color: #ff6b6b !important;
             font-weight: 700;
+            font-size: 1.2rem;
         }
 
         .water-level-ok {
             color: #4CAF50 !important;
             font-weight: 700;
+            font-size: 1.2rem;
         }
 
         .water-level-moist {
             color: #339af0 !important;
             font-weight: 700;
+            font-size: 1.2rem;
         }
 
         .water-level-high {
             color: #228be6 !important;
             font-weight: 700;
+            font-size: 1.2rem;
         }
 
         /* Loading Overlay */
@@ -139,7 +143,7 @@
             align-items: center;
             z-index: 9999;
             color: white;
-            font-size: 1.5rem;
+            font-size: 2rem;
             flex-direction: column;
             transition: opacity 0.3s ease;
         }
@@ -151,13 +155,13 @@
 
         .loading {
             display: inline-block;
-            width: 50px;
-            height: 50px;
-            border: 5px solid rgba(255,255,255,.3);
+            width: 70px;
+            height: 70px;
+            border: 6px solid rgba(255,255,255,.3);
             border-radius: 50%;
             border-top-color: white;
             animation: spin 1s ease-in-out infinite;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
 
         @keyframes spin {
@@ -169,27 +173,27 @@
             width: 100%;
             border-collapse: collapse;
             background: white;
-            border-radius: 12px;
+            border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-            font-size: 1rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            font-size: 1.2rem;
         }
 
         .records-table th {
             background: #4a5568;
             color: white;
-            padding: 18px 15px;
+            padding: 25px 20px;
             text-align: left;
             font-weight: 600;
-            font-size: 1.05rem;
+            font-size: 1.3rem;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
         }
 
         .records-table td {
-            padding: 16px 15px;
-            border-bottom: 2px solid #e2e8f0;
-            font-size: 1rem;
+            padding: 22px 20px;
+            border-bottom: 3px solid #e2e8f0;
+            font-size: 1.2rem;
             font-weight: 500;
         }
 
@@ -211,21 +215,21 @@
             color: #2d3748;
             font-weight: 600;
             white-space: nowrap;
-            font-size: 0.95rem;
+            font-size: 1.1rem;
         }
 
         .value-col {
             text-align: center;
             font-weight: 700;
             font-family: 'Courier New', monospace;
-            font-size: 1.1rem;
+            font-size: 1.3rem;
             color: #2d3748;
         }
 
         .percent-col {
             text-align: center;
             font-weight: 700;
-            font-size: 1.1rem;
+            font-size: 1.3rem;
             color: #2d3748;
         }
 
@@ -234,176 +238,174 @@
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1900px; /* MAS MALAPAD PA */
             margin: 0 auto;
         }
 
         .header {
             text-align: center;
             color: white;
-            margin-bottom: 30px;
-            padding: 20px;
+            margin-bottom: 40px;
+            padding: 30px;
         }
 
         .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
+            font-size: 3.5rem;
+            margin-bottom: 15px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
+            gap: 20px;
         }
 
         .header p {
-            font-size: 1.1rem;
+            font-size: 1.4rem;
             opacity: 0.9;
         }
 
         .dashboard {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); /* MAS MALAPAD */
+            gap: 35px;
+            margin-bottom: 40px;
         }
 
         .card {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.97);
+            border-radius: 25px;
+            padding: 40px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
             transition: transform 0.3s ease;
-            backdrop-filter: blur(10px);
         }
 
         .card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-8px);
+        }
+
+        /* BIG CHART CARD - EXTRA MALAKI */
+        .big-chart-card {
+            grid-column: 1 / -1;
+            padding: 60px; /* EXTRA MALAKING PADDING */
+            background: rgba(255, 255, 255, 0.97);
+            border-radius: 25px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            margin-bottom: 40px;
         }
 
         .card-title {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 15px;
+            margin-bottom: 30px;
             color: #333;
-            font-size: 1.4rem;
+            font-size: 2.2rem; /* MAS MALAKI */
         }
 
         .card-title i {
             color: #667eea;
+            font-size: 2.2rem;
         }
 
         .moisture-level {
             text-align: center;
-            margin: 20px 0;
+            margin: 30px 0;
         }
 
         .percentage {
-            font-size: 4rem;
+            font-size: 6rem;
             font-weight: 700;
             color: #667eea;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
 
         .gauge-container {
-            height: 150px;
-            margin: 20px 0;
+            height: 200px;
+            margin: 30px 0;
         }
 
-        .history-chart-container {
-            height: 300px;
-            margin-top: 20px;
-            position: relative;
-        }
-
-        .charts-grid {
+        /* CHART CONTAINER - EXTRA MALAKI */
+        .chart-grid-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 25px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 50px; /* MAS MALAKI ANG GAP */
+            margin-top: 40px;
         }
 
-        .chart-card {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
+        .chart-container {
+            height: 500px; /* MAS MATAAS NA CHARTS - 500px */
+            position: relative;
+            background: #f8f9fa;
+            border-radius: 15px;
             padding: 25px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
-
-        .chart-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
-            color: #333;
-            font-size: 1.3rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
+            gap: 20px;
         }
 
         .stat-item {
             background: #f8f9fa;
-            padding: 15px;
-            border-radius: 15px;
+            padding: 20px;
+            border-radius: 20px;
             text-align: center;
         }
 
         .stat-value {
-            font-size: 1.8rem;
+            font-size: 2.5rem;
             font-weight: 700;
             color: #667eea;
         }
 
         .stat-label {
-            font-size: 0.9rem;
+            font-size: 1.1rem;
             color: #666;
-            margin-top: 5px;
+            margin-top: 8px;
         }
 
         .device-info {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 2px solid #eee;
         }
 
         .device-id {
             font-family: monospace;
             background: #f1f3f5;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 0.9rem;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 1.1rem;
         }
 
         .last-update {
             color: #666;
-            font-size: 0.9rem;
-            margin-top: 10px;
-            padding: 10px;
+            font-size: 1.1rem;
+            margin-top: 15px;
+            padding: 15px;
             background: #f8f9fa;
-            border-radius: 8px;
+            border-radius: 12px;
             text-align: center;
         }
 
         .refresh-btn {
             display: block;
             width: 100%;
-            padding: 15px;
+            padding: 20px;
             background: #667eea;
             color: white;
             border: none;
-            border-radius: 15px;
-            font-size: 1.1rem;
+            border-radius: 20px;
+            font-size: 1.3rem;
             font-weight: 600;
             cursor: pointer;
             transition: background 0.3s ease;
-            margin-top: 20px;
+            margin-top: 30px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 15px;
         }
 
         .refresh-btn:hover {
@@ -413,57 +415,75 @@
         .footer {
             text-align: center;
             color: white;
-            margin-top: 40px;
-            padding: 20px;
-            opacity: 0.8;
+            margin-top: 50px;
+            padding: 30px;
+            opacity: 0.9;
+        }
+
+        .footer p {
+            font-size: 1.2rem;
         }
 
         /* Recent Records Table Styles */
         .records-container {
-            margin-top: 20px;
+            margin-top: 25px;
         }
 
         .records-title {
-            font-size: 1.8rem;
+            font-size: 2.2rem;
             font-weight: 700;
             color: #2d3748;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 3px solid #667eea;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 4px solid #667eea;
             text-align: center;
+        }
+
+        /* PAST RECORDS SECTION */
+        .past-records-title {
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 35px;
+            padding-bottom: 25px;
+            border-bottom: 5px solid #ff6b6b;
+            text-align: center;
+            background: linear-gradient(90deg, #667eea, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .table-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
 
         .table-actions {
             display: flex;
-            gap: 12px;
+            gap: 15px;
         }
 
         .action-btn {
-            padding: 10px 20px;
+            padding: 15px 25px;
             background: #667eea;
             color: white;
             border: none;
-            border-radius: 8px;
-            font-size: 1rem;
+            border-radius: 10px;
+            font-size: 1.2rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         }
 
         .action-btn:hover {
             background: #5a67d8;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
         }
 
         .action-btn.secondary {
@@ -476,55 +496,55 @@
 
         .data-count {
             color: #718096;
-            font-size: 1rem;
-            margin-top: 15px;
+            font-size: 1.2rem;
+            margin-top: 20px;
             text-align: right;
             font-weight: 600;
         }
 
         .interval-info {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 10px 15px;
-            border-radius: 10px;
-            margin-top: 10px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 15px 20px;
+            border-radius: 15px;
+            margin-top: 15px;
             display: inline-block;
-            font-size: 0.9rem;
+            font-size: 1.1rem;
             color: white;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
         }
 
         .countdown-timer {
-            font-size: 1rem;
+            font-size: 1.2rem;
             font-weight: 600;
             color: #667eea;
-            margin-top: 5px;
-            padding: 5px 10px;
+            margin-top: 8px;
+            padding: 8px 15px;
             background: #f8f9fa;
-            border-radius: 5px;
+            border-radius: 8px;
             display: inline-block;
         }
 
         .refresh-countdown {
-            font-size: 0.9rem;
+            font-size: 1.1rem;
             color: #667eea;
             font-weight: 500;
-            margin-top: 5px;
+            margin-top: 8px;
         }
 
         /* Chart controls */
         .chart-controls {
             display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
+            gap: 15px;
+            margin-bottom: 25px;
             flex-wrap: wrap;
         }
 
         .chart-btn {
-            padding: 8px 15px;
+            padding: 12px 20px;
             background: #e2e8f0;
             border: none;
-            border-radius: 6px;
-            font-size: 0.9rem;
+            border-radius: 8px;
+            font-size: 1.1rem;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -540,10 +560,72 @@
         }
 
         .time-range {
-            font-size: 0.9rem;
+            font-size: 1.1rem;
             color: #718096;
-            margin-top: 10px;
+            margin-top: 15px;
             text-align: right;
+        }
+
+        /* Chart Title for individual charts */
+        .chart-subtitle {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        /* PAST RECORDS CONTAINER */
+        .past-records-container {
+            max-height: 800px;
+            overflow-y: auto;
+            margin-top: 25px;
+            border-radius: 15px;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .past-records-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .past-records-table th {
+            background: #4a5568;
+            color: white;
+            padding: 20px 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .past-records-table td {
+            padding: 18px 15px;
+            border-bottom: 2px solid #e2e8f0;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .past-records-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .past-records-table tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        .past-records-table tr:hover {
+            background-color: #edf2f7;
         }
 
         @keyframes pulse {
@@ -552,31 +634,97 @@
             100% { opacity: 1; }
         }
 
-        @media (max-width: 768px) {
-            .dashboard, .charts-grid {
+        /* Scrollbar styling for past records */
+        .past-records-container::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .past-records-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 5px;
+        }
+
+        .past-records-container::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 5px;
+        }
+
+        .past-records-container::-webkit-scrollbar-thumb:hover {
+            background: #5a67d8;
+        }
+
+        @media (max-width: 1400px) {
+            .chart-grid-container {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+            
+            .chart-container {
+                height: 450px;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                max-width: 95%;
+            }
+            
+            .dashboard {
                 grid-template-columns: 1fr;
             }
-            
+        }
+
+        @media (max-width: 992px) {
             .header h1 {
-                font-size: 2rem;
+                font-size: 2.8rem;
             }
             
-            .records-table {
-                font-size: 0.9rem;
+            .records-table, .past-records-table {
+                font-size: 1.1rem;
             }
             
             .records-table th,
-            .records-table td {
-                padding: 12px 10px;
+            .records-table td,
+            .past-records-table th,
+            .past-records-table td {
+                padding: 18px 15px;
             }
             
-            .timestamp-col {
-                font-size: 0.85rem;
+            .big-chart-card {
+                padding: 40px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2.3rem;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .header p {
+                font-size: 1.2rem;
+            }
+            
+            .card, .big-chart-card {
+                padding: 25px;
+            }
+            
+            .percentage {
+                font-size: 4.5rem;
+            }
+            
+            .stat-value {
+                font-size: 2rem;
             }
             
             .table-header {
                 flex-direction: column;
-                gap: 15px;
+                gap: 20px;
                 align-items: flex-start;
             }
             
@@ -586,68 +734,58 @@
             }
             
             .status-badge {
-                padding: 6px 15px;
-                font-size: 0.85rem;
-                min-width: 100px;
+                padding: 8px 18px;
+                font-size: 0.9rem;
+                min-width: 110px;
             }
 
             .loading-overlay {
-                font-size: 1.2rem;
-                padding: 20px;
-                text-align: center;
+                font-size: 1.5rem;
             }
 
             .loading {
-                width: 40px;
-                height: 40px;
+                width: 50px;
+                height: 50px;
             }
-
-            .percentage {
-                font-size: 3rem;
+            
+            .chart-container {
+                height: 400px;
             }
-
-            .history-chart-container {
-                height: 250px;
-            }
-
-            .charts-grid {
-                grid-template-columns: 1fr;
+            
+            .past-records-container {
+                max-height: 600px;
             }
         }
 
         @media (max-width: 480px) {
-            .records-table {
-                display: block;
-                overflow-x: auto;
-                white-space: nowrap;
+            .header h1 {
+                font-size: 1.8rem;
             }
             
-            .status-badge {
-                padding: 5px 12px;
-                font-size: 0.8rem;
-                min-width: 90px;
+            .percentage {
+                font-size: 3.5rem;
+            }
+            
+            .status-indicator {
+                padding: 12px 25px;
+                font-size: 1.1rem;
             }
             
             .action-btn {
-                padding: 8px 15px;
-                font-size: 0.9rem;
-            }
-
-            .percentage {
-                font-size: 2.5rem;
-            }
-
-            .status-indicator {
-                padding: 8px 15px;
+                padding: 12px 20px;
                 font-size: 1rem;
             }
-
-            .history-chart-container {
-                height: 200px;
+            
+            .card-title {
+                font-size: 1.5rem;
             }
-
-            .chart-title {
+            
+            .chart-subtitle {
                 font-size: 1.1rem;
+            }
+            
+            .past-records-title {
+                font-size: 1.8rem;
             }
         }
     </style>
@@ -657,7 +795,7 @@
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading"></div>
         <div>Connecting to Smart Plant Sensor...</div>
-        <div style="font-size: 1rem; margin-top: 10px; opacity: 0.8;" class="refresh-countdown" id="countdownTimer">Loading...</div>
+        <div style="font-size: 1.2rem; margin-top: 15px; opacity: 0.9;" class="refresh-countdown" id="countdownTimer">Loading...</div>
     </div>
 
     <div class="container">
@@ -671,6 +809,7 @@
         </div>
 
         <div class="dashboard">
+            <!-- Current Plant Status Card -->
             <div class="card">
                 <h2 class="card-title"><i class="fas fa-tint"></i> Current Plant Status</h2>
                 <div class="moisture-level">
@@ -689,6 +828,7 @@
                 </div>
             </div>
 
+            <!-- Environment Card -->
             <div class="card">
                 <h2 class="card-title"><i class="fas fa-thermometer-half"></i> Environment</h2>
                 <div class="stats-grid">
@@ -716,58 +856,46 @@
             </div>
         </div>
 
-        <!-- Charts Grid -->
-        <div class="charts-grid">
-            <!-- Moisture History Chart -->
-            <div class="chart-card">
-                <div class="chart-title">
-                    <i class="fas fa-chart-line"></i> Moisture History
-                </div>
-                <div class="chart-controls">
-                    <button class="chart-btn active" onclick="setChartRange('moisture', 10)">10 min</button>
-                    <button class="chart-btn" onclick="setChartRange('moisture', 30)">30 min</button>
-                    <button class="chart-btn" onclick="setChartRange('moisture', 60)">1 hour</button>
-                    <button class="chart-btn" onclick="setChartRange('moisture', 180)">3 hours</button>
-                </div>
-                <div class="history-chart-container">
+        <!-- BIG CHART CARD - All 3 charts in one -->
+        <div class="big-chart-card">
+            <h2 class="card-title"><i class="fas fa-chart-area"></i> Plant Monitoring History</h2>
+            
+            <div class="chart-controls">
+                <button class="chart-btn active" onclick="setChartRange('all', 10)">10 min</button>
+                <button class="chart-btn" onclick="setChartRange('all', 30)">30 min</button>
+                <button class="chart-btn" onclick="setChartRange('all', 60)">1 hour</button>
+                <button class="chart-btn" onclick="setChartRange('all', 180)">3 hours</button>
+                <button class="chart-btn" onclick="setChartRange('all', 360)">6 hours</button>
+                <button class="chart-btn" onclick="setChartRange('all', 720)">12 hours</button>
+            </div>
+            
+            <div class="chart-grid-container">
+                <!-- Moisture History Chart -->
+                <div class="chart-container">
+                    <div class="chart-subtitle">
+                        <i class="fas fa-tint" style="color: #667eea;"></i> Moisture History
+                    </div>
                     <canvas id="moistureHistoryChart"></canvas>
                 </div>
-                <div class="time-range" id="moistureTimeRange">Showing last 10 minutes</div>
-            </div>
 
-            <!-- Temperature History Chart -->
-            <div class="chart-card">
-                <div class="chart-title">
-                    <i class="fas fa-thermometer"></i> Temperature History
-                </div>
-                <div class="chart-controls">
-                    <button class="chart-btn active" onclick="setChartRange('temperature', 10)">10 min</button>
-                    <button class="chart-btn" onclick="setChartRange('temperature', 30)">30 min</button>
-                    <button class="chart-btn" onclick="setChartRange('temperature', 60)">1 hour</button>
-                    <button class="chart-btn" onclick="setChartRange('temperature', 180)">3 hours</button>
-                </div>
-                <div class="history-chart-container">
+                <!-- Temperature History Chart -->
+                <div class="chart-container">
+                    <div class="chart-subtitle">
+                        <i class="fas fa-thermometer" style="color: #ff6b6b;"></i> Temperature History
+                    </div>
                     <canvas id="temperatureHistoryChart"></canvas>
                 </div>
-                <div class="time-range" id="temperatureTimeRange">Showing last 10 minutes</div>
-            </div>
 
-            <!-- Humidity History Chart -->
-            <div class="chart-card">
-                <div class="chart-title">
-                    <i class="fas fa-tint"></i> Humidity History
-                </div>
-                <div class="chart-controls">
-                    <button class="chart-btn active" onclick="setChartRange('humidity', 10)">10 min</button>
-                    <button class="chart-btn" onclick="setChartRange('humidity', 30)">30 min</button>
-                    <button class="chart-btn" onclick="setChartRange('humidity', 60)">1 hour</button>
-                    <button class="chart-btn" onclick="setChartRange('humidity', 180)">3 hours</button>
-                </div>
-                <div class="history-chart-container">
+                <!-- Humidity History Chart -->
+                <div class="chart-container">
+                    <div class="chart-subtitle">
+                        <i class="fas fa-water" style="color: #4CAF50;"></i> Humidity History
+                    </div>
                     <canvas id="humidityHistoryChart"></canvas>
                 </div>
-                <div class="time-range" id="humidityTimeRange">Showing last 10 minutes</div>
             </div>
+            
+            <div class="time-range" id="timeRange">Showing last 10 minutes</div>
         </div>
 
         <!-- Recent Records Table -->
@@ -798,9 +926,9 @@
                     <tbody id="recordsTableBody">
                         <!-- Records will be populated by JavaScript -->
                         <tr>
-                            <td colspan="5" style="text-align: center; padding: 40px; color: #718096;">
-                                <i class="fas fa-spinner fa-spin" style="margin-right: 10px;"></i>
-                                Loading plant records...
+                            <td colspan="5" style="text-align: center; padding: 50px; color: #718096;">
+                                <i class="fas fa-spinner fa-spin" style="margin-right: 15px; font-size: 1.5rem;"></i>
+                                <span style="font-size: 1.3rem;">Loading plant records...</span>
                             </td>
                         </tr>
                     </tbody>
@@ -812,20 +940,69 @@
             </div>
         </div>
 
+        <!-- PAST RECORDS TABLE - PERMANENT SECTION -->
+        <div class="card">
+            <h2 class="past-records-title"><i class="fas fa-history"></i> Past Plant Monitoring Records</h2>
+            <div class="table-header">
+                <div class="table-actions">
+                    <button class="action-btn secondary" onclick="loadMorePastRecords()">
+                        <i class="fas fa-plus"></i> Load More
+                    </button>
+                    <button class="action-btn secondary" onclick="clearPastRecords()">
+                        <i class="fas fa-trash"></i> Clear All
+                    </button>
+                    <button class="action-btn" onclick="exportAllRecords()">
+                        <i class="fas fa-file-download"></i> Export All
+                    </button>
+                </div>
+            </div>
+            
+            <div class="past-records-container">
+                <table class="past-records-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Moisture (%)</th>
+                            <th>Temp (°C)</th>
+                            <th>Humidity (%)</th>
+                            <th>Status</th>
+                            <th>Raw Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pastRecordsTableBody">
+                        <!-- Past records will be populated by JavaScript -->
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 40px; color: #718096;">
+                                <i class="fas fa-database" style="margin-right: 10px;"></i>
+                                Past records will appear here
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="data-count">
+                Total past records: <span id="pastRecordCount">0</span>
+            </div>
+        </div>
+
+        <!-- Refresh Button -->
         <button class="refresh-btn" onclick="debug.fetchData()">
             <i class="fas fa-sync-alt"></i> Refresh Data (Device: <span id="refreshDeviceId">smart-plant-reminder</span>)
         </button>
 
+        <!-- Footer -->
         <div class="footer">
             <p>Smart Plant Watering Reminder System | IoT Project | ESP32 & Firebase</p>
             <p>Status indicators: 
-                <span class="status-badge status-need-water-badge" style="margin: 0 5px;">NEED WATER (&lt;20%)</span>
-                <span class="status-badge status-low-badge" style="margin: 0 5px;">LOW (20-34%)</span>
-                <span class="status-badge status-ok-badge" style="margin: 0 5px;">OK (35-64%)</span>
-                <span class="status-badge status-moist-badge" style="margin: 0 5px;">MOIST (65-84%)</span>
-                <span class="status-badge status-too-wet-badge" style="margin: 0 5px;">TOO WET (&gt;85%)</span>
+                <span class="status-badge status-need-water-badge" style="margin: 0 8px;">NEED WATER (&lt;20%)</span>
+                <span class="status-badge status-low-badge" style="margin: 0 8px;">LOW (20-34%)</span>
+                <span class="status-badge status-ok-badge" style="margin: 0 8px;">OK (35-64%)</span>
+                <span class="status-badge status-moist-badge" style="margin: 0 8px;">MOIST (65-84%)</span>
+                <span class="status-badge status-too-wet-badge" style="margin: 0 8px;">TOO WET (&gt;85%)</span>
             </p>
-            <p style="margin-top: 10px; font-size: 0.9rem;">
+            <p style="margin-top: 15px; font-size: 1.1rem;">
                 <i class="fas fa-info-circle"></i> Data is updated from ESP32 every 10 seconds. Dashboard refreshes automatically.
             </p>
         </div>
@@ -834,9 +1011,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Temporary inline script while loading
-        console.log("🌱 Dashboard loading...");
+        console.log("🌱 BIG Dashboard with Past Records loading...");
         
-        // Hide loading overlay after 3 seconds (will be overridden by dashboard.js)
+        // Hide loading overlay after 3 seconds
         setTimeout(function() {
             document.getElementById('loadingOverlay').classList.add('hidden');
         }, 3000);
@@ -844,18 +1021,36 @@
         // Global chart range function
         window.setChartRange = function(chartType, minutes) {
             // Update button states
-            document.querySelectorAll(`#${chartType}HistoryChart`).closest('.chart-card').querySelectorAll('.chart-btn').forEach(btn => {
+            document.querySelectorAll('.big-chart-card .chart-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
             event.target.classList.add('active');
             
             // Update time range text
-            document.getElementById(`${chartType}TimeRange`).textContent = `Showing last ${minutes} minutes`;
+            document.getElementById('timeRange').textContent = `Showing last ${minutes} minutes`;
             
-            // This will be implemented in dashboard.js
-            if (window.updateChartRange) {
-                window.updateChartRange(chartType, minutes);
+            // Call dashboard.js function for all charts
+            if (window.updateAllChartRanges) {
+                window.updateAllChartRanges(minutes);
             }
+        };
+
+        // Placeholder functions for past records
+        window.loadMorePastRecords = function() {
+            console.log("Loading more past records...");
+            alert("This feature will be implemented in dashboard.js");
+        };
+
+        window.clearPastRecords = function() {
+            if (confirm("Are you sure you want to clear all past records?")) {
+                console.log("Clearing past records...");
+                alert("This feature will be implemented in dashboard.js");
+            }
+        };
+
+        window.exportAllRecords = function() {
+            console.log("Exporting all records...");
+            alert("This feature will be implemented in dashboard.js");
         };
     </script>
     <script src="dashboard.js"></script>
