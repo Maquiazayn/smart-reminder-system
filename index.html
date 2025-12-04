@@ -7,17 +7,122 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+
+        :root {
+    font-size: 16px; /* Base font size */
+    --scale-factor: 1; /* Scale factor for zoom */
+}
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        html {
+    font-size: 16px; /* Reset for zoom */
+    -webkit-text-size-adjust: 100%; /* Prevent text inflation on zoom */
+    -ms-text-size-adjust: 100%;
+}
+
+        /* Fix table column alignment */
+.records-table td,
+.past-records-table td {
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+/* First two columns (Date and Time) left-aligned */
+.records-table td:nth-child(1),
+.records-table td:nth-child(2),
+.past-records-table td:nth-child(1),
+.past-records-table td:nth-child(2) {
+    text-align: left !important;
+}
+
+/* Status column centered - override */
+.records-table .status-col,
+.past-records-table .status-col {
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+/* Date and Time column styling - MAS PANTAY */
+.date-col {
+    font-weight: 600;
+    color: #2d3748;
+    white-space: nowrap;
+    text-align: left !important;
+    width: 15%;
+    min-width: 120px;
+}
+
+.timestamp-col {
+    font-family: 'Courier New', monospace;
+    color: #2d3748;
+    font-weight: 600;
+    white-space: nowrap;
+    text-align: left !important;
+    width: 12%;
+    min-width: 100px;
+}
+
+/* Moisture column - center aligned */
+.percent-col {
+    text-align: center !important;
+    font-weight: 700;
+    font-size: 1.3rem;
+    width: 12%;
+    min-width: 110px;
+}
+
+/* Temperature and Humidity columns - center aligned */
+.value-col {
+    text-align: center !important;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    font-size: 1.3rem;
+    width: 12%;
+    min-width: 110px;
+}
+
+/* Status column - fixed width */
+.status-col {
+    width: 15%;
+    min-width: 140px;
+    text-align: center !important;
+}
+
+/* Raw Value column for past records */
+.past-records-table td:nth-child(7) {
+    text-align: center !important;
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    width: 10%;
+    min-width: 100px;
+}
+
+/* Ensure table headers match the data columns */
+.records-table th,
+.past-records-table th {
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+.records-table th:nth-child(1),
+.records-table th:nth-child(2),
+.past-records-table th:nth-child(1),
+.past-records-table th:nth-child(2) {
+    text-align: left !important;
+}
+
         body {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 30px;
+             font-size: 1rem; /* Use rem units for scalability */
+    transform-origin: 0 0; /* Keep scaling from top-left */
+    transition: all 0.3s ease; /* Smooth zoom transitions */
         }
 
         /* Status Indicator Styles */
@@ -653,6 +758,67 @@
             background: #5a67d8;
         }
 
+        /* Consistent column widths for both tables */
+        .records-table th:nth-child(1),
+        .past-records-table th:nth-child(1) {
+            width: 15%;
+        }
+
+        .records-table th:nth-child(2),
+        .past-records-table th:nth-child(2) {
+            width: 12%;
+        }
+
+        .records-table th:nth-child(3),
+        .past-records-table th:nth-child(3) {
+            width: 13%;
+        }
+
+        .records-table th:nth-child(4),
+        .past-records-table th:nth-child(4) {
+            width: 15%;
+        }
+
+        .records-table th:nth-child(5),
+        .past-records-table th:nth-child(5) {
+            width: 13%;
+        }
+
+        .records-table th:nth-child(6),
+        .past-records-table th:nth-child(6) {
+            width: 17%;
+        }
+
+        .past-records-table th:nth-child(7) {
+            width: 15%;
+        }
+
+        /* Ensure table cells have consistent alignment */
+        .records-table td,
+        .past-records-table td {
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        .records-table td:first-child,
+        .past-records-table td:first-child,
+        .records-table td:nth-child(2),
+        .past-records-table td:nth-child(2) {
+            text-align: left;
+        }
+
+        /* Make the status column centered */
+        .status-col {
+            text-align: center !important;
+        }
+
+        /* Date column specific style */
+        .date-col {
+            font-weight: 600;
+            color: #2d3748;
+            white-space: nowrap;
+        }
+
         @media (max-width: 1400px) {
             .chart-grid-container {
                 grid-template-columns: 1fr;
@@ -671,6 +837,17 @@
             
             .dashboard {
                 grid-template-columns: 1fr;
+            }
+            
+            /* Adjust column widths for smaller screens */
+            .records-table th:nth-child(1),
+            .past-records-table th:nth-child(1) {
+                width: 20%;
+            }
+            
+            .records-table th:nth-child(2),
+            .past-records-table th:nth-child(2) {
+                width: 15%;
             }
         }
 
@@ -755,6 +932,19 @@
             .past-records-container {
                 max-height: 600px;
             }
+            
+            /* Adjust column widths for mobile */
+            .records-table th,
+            .past-records-table th {
+                font-size: 1rem;
+                padding: 15px 10px;
+            }
+            
+            .records-table td,
+            .past-records-table td {
+                padding: 15px 10px;
+                font-size: 1rem;
+            }
         }
 
         @media (max-width: 480px) {
@@ -803,8 +993,8 @@
             <h1><i class="fas fa-seedling"></i> Smart Plant Watering Dashboard</h1>
             <p>Real-time monitoring system for all your plants' health</p>
             <div class="interval-info">
-                <i class="fas fa-clock"></i> Data updates every 10 seconds
-                <div class="refresh-countdown" id="refreshCountdown">Next refresh in: 10 seconds</div>
+                <i class="fas fa-clock"></i> Data updates every 60 seconds
+                <div class="refresh-countdown" id="refreshCountdown">Next refresh in: 60 seconds</div>
             </div>
         </div>
 
@@ -899,7 +1089,7 @@
         </div>
 
         <!-- Recent Records Table -->
-        <div class="card">
+        <div class="card" style="margin-bottom: 30px;">
             <div class="table-header">
                 <h2 class="records-title">Recent Plant Monitoring Records</h2>
                 <div class="table-actions">
@@ -916,17 +1106,18 @@
                 <table class="records-table">
                     <thead>
                         <tr>
-                            <th>Timestamp</th>
-                            <th>Moisture Level (%)</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Moisture (%)</th>
                             <th>Temperature (°C)</th>
                             <th>Humidity (%)</th>
-                            <th>Plant Status</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
                     <tbody id="recordsTableBody">
                         <!-- Records will be populated by JavaScript -->
                         <tr>
-                            <td colspan="5" style="text-align: center; padding: 50px; color: #718096;">
+                            <td colspan="6" style="text-align: center; padding: 50px; color: #718096;">
                                 <i class="fas fa-spinner fa-spin" style="margin-right: 15px; font-size: 1.5rem;"></i>
                                 <span style="font-size: 1.3rem;">Loading plant records...</span>
                             </td>
@@ -940,8 +1131,16 @@
             </div>
         </div>
 
+        <!-- Section Separator -->
+        <div style="
+            height: 2px;
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.3), rgba(255, 107, 107, 0.3));
+            margin: 40px 0;
+            border-radius: 1px;
+        "></div>
+
         <!-- PAST RECORDS TABLE - PERMANENT SECTION -->
-        <div class="card">
+        <div class="card" style="margin-top: 40px;">
             <h2 class="past-records-title"><i class="fas fa-history"></i> Past Plant Monitoring Records</h2>
             <div class="table-header">
                 <div class="table-actions">
