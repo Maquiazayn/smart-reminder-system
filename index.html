@@ -7,11 +7,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-
         :root {
-    font-size: 16px; /* Base font size */
-    --scale-factor: 1; /* Scale factor for zoom */
-}
+            font-size: 16px;
+            --scale-factor: 1;
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -19,113 +19,113 @@
         }
 
         html {
-    font-size: 16px; /* Reset for zoom */
-    -webkit-text-size-adjust: 100%; /* Prevent text inflation on zoom */
-    -ms-text-size-adjust: 100%;
-}
+            font-size: 16px;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
 
         /* Fix table column alignment */
-.records-table td,
-.past-records-table td {
-    text-align: center !important;
-    vertical-align: middle !important;
-}
+        .records-table td,
+        .past-records-table td {
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
 
-/* First two columns (Date and Time) left-aligned */
-.records-table td:nth-child(1),
-.records-table td:nth-child(2),
-.past-records-table td:nth-child(1),
-.past-records-table td:nth-child(2) {
-    text-align: left !important;
-}
+        /* First two columns (Date and Time) left-aligned */
+        .records-table td:nth-child(1),
+        .records-table td:nth-child(2),
+        .past-records-table td:nth-child(1),
+        .past-records-table td:nth-child(2) {
+            text-align: left !important;
+        }
 
-/* Status column centered - override */
-.records-table .status-col,
-.past-records-table .status-col {
-    text-align: center !important;
-    vertical-align: middle !important;
-}
+        /* Status column centered - override */
+        .records-table .status-col,
+        .past-records-table .status-col {
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
 
-/* Date and Time column styling - MAS PANTAY */
-.date-col {
-    font-weight: 600;
-    color: #2d3748;
-    white-space: nowrap;
-    text-align: left !important;
-    width: 15%;
-    min-width: 120px;
-}
+        /* Date and Time column styling */
+        .date-col {
+            font-weight: 600;
+            color: #2d3748;
+            white-space: nowrap;
+            text-align: left !important;
+            width: 15%;
+            min-width: 120px;
+        }
 
-.timestamp-col {
-    font-family: 'Courier New', monospace;
-    color: #2d3748;
-    font-weight: 600;
-    white-space: nowrap;
-    text-align: left !important;
-    width: 12%;
-    min-width: 100px;
-}
+        .timestamp-col {
+            font-family: 'Courier New', monospace;
+            color: #2d3748;
+            font-weight: 600;
+            white-space: nowrap;
+            text-align: left !important;
+            width: 12%;
+            min-width: 100px;
+        }
 
-/* Moisture column - center aligned */
-.percent-col {
-    text-align: center !important;
-    font-weight: 700;
-    font-size: 1.3rem;
-    width: 12%;
-    min-width: 110px;
-}
+        /* Moisture column - center aligned */
+        .percent-col {
+            text-align: center !important;
+            font-weight: 700;
+            font-size: 1.3rem;
+            width: 12%;
+            min-width: 110px;
+        }
 
-/* Temperature and Humidity columns - center aligned */
-.value-col {
-    text-align: center !important;
-    font-weight: 700;
-    font-family: 'Courier New', monospace;
-    font-size: 1.3rem;
-    width: 12%;
-    min-width: 110px;
-}
+        /* Temperature and Humidity columns - center aligned */
+        .value-col {
+            text-align: center !important;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            font-size: 1.3rem;
+            width: 12%;
+            min-width: 110px;
+        }
 
-/* Status column - fixed width */
-.status-col {
-    width: 15%;
-    min-width: 140px;
-    text-align: center !important;
-}
+        /* Status column - fixed width */
+        .status-col {
+            width: 15%;
+            min-width: 140px;
+            text-align: center !important;
+        }
 
-/* Raw Value column for past records */
-.past-records-table td:nth-child(7) {
-    text-align: center !important;
-    font-family: 'Courier New', monospace;
-    font-weight: 700;
-    width: 10%;
-    min-width: 100px;
-}
+        /* Raw Value column for past records */
+        .past-records-table td:nth-child(7) {
+            text-align: center !important;
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            width: 10%;
+            min-width: 100px;
+        }
 
-/* Ensure table headers match the data columns */
-.records-table th,
-.past-records-table th {
-    text-align: center !important;
-    vertical-align: middle !important;
-}
+        /* Ensure table headers match the data columns */
+        .records-table th,
+        .past-records-table th {
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
 
-.records-table th:nth-child(1),
-.records-table th:nth-child(2),
-.past-records-table th:nth-child(1),
-.past-records-table th:nth-child(2) {
-    text-align: left !important;
-}
+        .records-table th:nth-child(1),
+        .records-table th:nth-child(2),
+        .past-records-table th:nth-child(1),
+        .past-records-table th:nth-child(2) {
+            text-align: left !important;
+        }
 
         body {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 30px;
-             font-size: 1rem; /* Use rem units for scalability */
-    transform-origin: 0 0; /* Keep scaling from top-left */
-    transition: all 0.3s ease; /* Smooth zoom transitions */
+            font-size: 1rem;
+            transform-origin: 0 0;
+            transition: all 0.3s ease;
         }
 
-        /* Status Indicator Styles */
+        /* UPDATED Status Indicator Styles for new ranges */
         .status-indicator {
             padding: 15px 30px;
             border-radius: 30px;
@@ -141,11 +141,6 @@
             background-color: #ff6b6b;
             color: white;
             animation: pulse 2s infinite;
-        }
-
-        .status-low {
-            background-color: #ffa94d;
-            color: white;
         }
 
         .status-ok {
@@ -173,7 +168,12 @@
             color: white;
         }
 
-        /* Table Status Badges */
+        .status-calibrating {
+            background-color: #ffa94d;
+            color: white;
+        }
+
+        /* UPDATED Table Status Badges for new ranges */
         .status-badge {
             display: inline-block;
             padding: 10px 20px;
@@ -187,11 +187,6 @@
 
         .status-need-water-badge {
             background-color: #ff6b6b;
-            color: white;
-        }
-
-        .status-low-badge {
-            background-color: #ffa94d;
             color: white;
         }
 
@@ -210,8 +205,13 @@
             color: white;
         }
 
-        /* Moisture Level Colors in Table */
-        .water-level-low {
+        .status-calibrating-badge {
+            background-color: #ffa94d;
+            color: white;
+        }
+
+        /* UPDATED Moisture Level Colors in Table */
+        .water-level-need-water {
             color: #ff6b6b !important;
             font-weight: 700;
             font-size: 1.2rem;
@@ -229,7 +229,7 @@
             font-size: 1.2rem;
         }
 
-        .water-level-high {
+        .water-level-too-wet {
             color: #228be6 !important;
             font-weight: 700;
             font-size: 1.2rem;
@@ -273,6 +273,12 @@
             to { transform: rotate(360deg); }
         }
 
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
         /* Table Styles */
         .records-table {
             width: 100%;
@@ -314,36 +320,8 @@
             background-color: #edf2f7;
         }
 
-        /* Column-specific styles */
-        .timestamp-col {
-            font-family: 'Courier New', monospace;
-            color: #2d3748;
-            font-weight: 600;
-            white-space: nowrap;
-            font-size: 1.1rem;
-        }
-
-        .value-col {
-            text-align: center;
-            font-weight: 700;
-            font-family: 'Courier New', monospace;
-            font-size: 1.3rem;
-            color: #2d3748;
-        }
-
-        .percent-col {
-            text-align: center;
-            font-weight: 700;
-            font-size: 1.3rem;
-            color: #2d3748;
-        }
-
-        .status-col {
-            text-align: center;
-        }
-
         .container {
-            max-width: 1900px; /* MAS MALAPAD PA */
+            max-width: 1900px;
             margin: 0 auto;
         }
 
@@ -370,7 +348,7 @@
 
         .dashboard {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); /* MAS MALAPAD */
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
             gap: 35px;
             margin-bottom: 40px;
         }
@@ -387,10 +365,10 @@
             transform: translateY(-8px);
         }
 
-        /* BIG CHART CARD - EXTRA MALAKI */
+        /* BIG CHART CARD */
         .big-chart-card {
             grid-column: 1 / -1;
-            padding: 60px; /* EXTRA MALAKING PADDING */
+            padding: 60px;
             background: rgba(255, 255, 255, 0.97);
             border-radius: 25px;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
@@ -403,7 +381,7 @@
             gap: 15px;
             margin-bottom: 30px;
             color: #333;
-            font-size: 2.2rem; /* MAS MALAKI */
+            font-size: 2.2rem;
         }
 
         .card-title i {
@@ -428,16 +406,16 @@
             margin: 30px 0;
         }
 
-        /* CHART CONTAINER - EXTRA MALAKI */
+        /* CHART CONTAINER */
         .chart-grid-container {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 50px; /* MAS MALAKI ANG GAP */
+            gap: 50px;
             margin-top: 40px;
         }
 
         .chart-container {
-            height: 500px; /* MAS MATAAS NA CHARTS - 500px */
+            height: 500px;
             position: relative;
             background: #f8f9fa;
             border-radius: 15px;
@@ -631,7 +609,7 @@
 
         .refresh-countdown {
             font-size: 1.1rem;
-            color: #667eea;
+            color: red;
             font-weight: 500;
             margin-top: 8px;
         }
@@ -684,20 +662,28 @@
             gap: 10px;
         }
 
-        /* PAST RECORDS CONTAINER */
+        /* UPDATED: PAST RECORDS CONTAINER with STICKY HEADER */
         .past-records-container {
             max-height: 800px;
             overflow-y: auto;
             margin-top: 25px;
             border-radius: 15px;
             background: white;
-            padding: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
         }
 
+        /* Sticky header for past records table */
         .past-records-table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .past-records-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
         .past-records-table th {
@@ -709,9 +695,15 @@
             font-size: 1.2rem;
             text-transform: uppercase;
             letter-spacing: 1px;
-            position: sticky;
-            top: 0;
-            z-index: 10;
+            border-bottom: 3px solid #2d3748;
+        }
+
+        .past-records-table th:first-child {
+            border-top-left-radius: 15px;
+        }
+
+        .past-records-table th:last-child {
+            border-top-right-radius: 15px;
         }
 
         .past-records-table td {
@@ -733,25 +725,20 @@
             background-color: #edf2f7;
         }
 
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
-
         /* Scrollbar styling for past records */
         .past-records-container::-webkit-scrollbar {
-            width: 10px;
+            width: 12px;
         }
 
         .past-records-container::-webkit-scrollbar-track {
             background: #f1f1f1;
-            border-radius: 5px;
+            border-radius: 0 15px 15px 0;
         }
 
         .past-records-container::-webkit-scrollbar-thumb {
             background: #667eea;
-            border-radius: 5px;
+            border-radius: 6px;
+            border: 3px solid #f1f1f1;
         }
 
         .past-records-container::-webkit-scrollbar-thumb:hover {
@@ -819,6 +806,32 @@
             white-space: nowrap;
         }
 
+        /* UPDATED Footer status indicators */
+        .footer-status {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        /* Table data wrapper for better scroll performance */
+        .table-data-wrapper {
+            overflow-x: auto;
+        }
+
+        /* Add shadow to sticky header when scrolling */
+        .past-records-table thead::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: -3px;
+            height: 3px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.1), transparent);
+            pointer-events: none;
+        }
+
         @media (max-width: 1400px) {
             .chart-grid-container {
                 grid-template-columns: 1fr;
@@ -827,6 +840,12 @@
             
             .chart-container {
                 height: 450px;
+            }
+            
+            .past-records-table th,
+            .past-records-table td {
+                padding: 15px 12px;
+                font-size: 1.1rem;
             }
         }
 
@@ -839,7 +858,6 @@
                 grid-template-columns: 1fr;
             }
             
-            /* Adjust column widths for smaller screens */
             .records-table th:nth-child(1),
             .past-records-table th:nth-child(1) {
                 width: 20%;
@@ -848,6 +866,10 @@
             .records-table th:nth-child(2),
             .past-records-table th:nth-child(2) {
                 width: 15%;
+            }
+            
+            .past-records-table th:nth-child(7) {
+                width: 12%;
             }
         }
 
@@ -869,6 +891,10 @@
             
             .big-chart-card {
                 padding: 40px;
+            }
+            
+            .past-records-container {
+                max-height: 600px;
             }
         }
 
@@ -930,10 +956,9 @@
             }
             
             .past-records-container {
-                max-height: 600px;
+                max-height: 500px;
             }
             
-            /* Adjust column widths for mobile */
             .records-table th,
             .past-records-table th {
                 font-size: 1rem;
@@ -944,6 +969,29 @@
             .past-records-table td {
                 padding: 15px 10px;
                 font-size: 1rem;
+            }
+            
+            /* Adjust column widths for mobile */
+            .past-records-table th:nth-child(1) {
+                width: 18%;
+            }
+            
+            .past-records-table th:nth-child(2) {
+                width: 15%;
+            }
+            
+            .past-records-table th:nth-child(3),
+            .past-records-table th:nth-child(4),
+            .past-records-table th:nth-child(5) {
+                width: 10%;
+            }
+            
+            .past-records-table th:nth-child(6) {
+                width: 15%;
+            }
+            
+            .past-records-table th:nth-child(7) {
+                width: 14%;
             }
         }
 
@@ -977,6 +1025,19 @@
             .past-records-title {
                 font-size: 1.8rem;
             }
+            
+            .past-records-container {
+                max-height: 400px;
+            }
+            
+            /* Mobile optimization for past records table */
+            .past-records-table {
+                min-width: 800px; /* Force horizontal scroll on mobile */
+            }
+            
+            .table-data-wrapper {
+                overflow-x: auto;
+            }
         }
     </style>
 </head>
@@ -993,8 +1054,10 @@
             <h1><i class="fas fa-seedling"></i> Smart Plant Watering Dashboard</h1>
             <p>Real-time monitoring system for all your plants' health</p>
             <div class="interval-info">
-                <i class="fas fa-clock"></i> Data updates every 60 seconds
-                <div class="refresh-countdown" id="refreshCountdown">Next refresh in: 60 seconds</div>
+                <i class="fas fa-clock"></i> ESP32 updates Firebase every 60 seconds
+                <div class="refresh-countdown" id="refreshCountdown">
+                    Next Firebase update in: 60 seconds
+                </div>
             </div>
         </div>
 
@@ -1013,8 +1076,8 @@
                 </div>
                 
                 <div class="last-update">
-                    Last updated: <span id="lastUpdate">--</span>
-                    <div class="refresh-countdown">Next update in: <span id="countdownValue">10</span> seconds</div>
+                    Last Firebase update: <span id="lastUpdate">--</span>
+                    <div class="refresh-countdown">Next Firebase update in: <span id="countdownValue">60</span> seconds</div>
                 </div>
             </div>
 
@@ -1036,12 +1099,15 @@
                     </div>
                     <div class="stat-item">
                         <div class="stat-value" id="updateCount">0</div>
-                        <div class="stat-label">Updates Received</div>
+                        <div class="stat-label">Firebase Updates</div>
                     </div>
                 </div>
                 
                 <div class="device-info">
-                    <p>Device ID: <span class="device-id" id="deviceId">------</span></p>
+                    <p>Device ID: <span class="device-id" id="deviceId">smart-plant-reminder</span></p>
+                    <p style="margin-top: 10px; color: #666; font-size: 1rem;">
+                        <i class="fas fa-info-circle"></i> Device sends data to Firebase every 60 seconds
+                    </p>
                 </div>
             </div>
         </div>
@@ -1139,7 +1205,7 @@
             border-radius: 1px;
         "></div>
 
-        <!-- PAST RECORDS TABLE - PERMANENT SECTION -->
+        <!-- PAST RECORDS TABLE - PERMANENT SECTION WITH STICKY HEADER -->
         <div class="card" style="margin-top: 40px;">
             <h2 class="past-records-title"><i class="fas fa-history"></i> Past Plant Monitoring Records</h2>
             <div class="table-header">
@@ -1156,29 +1222,32 @@
                 </div>
             </div>
             
-            <div class="past-records-container">
-                <table class="past-records-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Time</th>
-                            <th>Moisture (%)</th>
-                            <th>Temp (°C)</th>
-                            <th>Humidity (%)</th>
-                            <th>Status</th>
-                            <th>Raw Value</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pastRecordsTableBody">
-                        <!-- Past records will be populated by JavaScript -->
-                        <tr>
-                            <td colspan="7" style="text-align: center; padding: 40px; color: #718096;">
-                                <i class="fas fa-database" style="margin-right: 10px;"></i>
-                                Past records will appear here
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <!-- UPDATED: Added table data wrapper for better mobile support -->
+            <div class="table-data-wrapper">
+                <div class="past-records-container">
+                    <table class="past-records-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Moisture (%)</th>
+                                <th>Temp (°C)</th>
+                                <th>Humidity (%)</th>
+                                <th>Status</th>
+                                <th>Raw Value</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pastRecordsTableBody">
+                            <!-- Past records will be populated by JavaScript -->
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 40px; color: #718096;">
+                                    <i class="fas fa-database" style="margin-right: 10px;"></i>
+                                    Past records will appear here
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
             
             <div class="data-count">
@@ -1194,15 +1263,24 @@
         <!-- Footer -->
         <div class="footer">
             <p>Smart Plant Watering Reminder System | IoT Project | ESP32 & Firebase</p>
-            <p>Status indicators: 
-                <span class="status-badge status-need-water-badge" style="margin: 0 8px;">NEED WATER (&lt;20%)</span>
-                <span class="status-badge status-low-badge" style="margin: 0 8px;">LOW (20-34%)</span>
-                <span class="status-badge status-ok-badge" style="margin: 0 8px;">OK (35-64%)</span>
-                <span class="status-badge status-moist-badge" style="margin: 0 8px;">MOIST (65-84%)</span>
-                <span class="status-badge status-too-wet-badge" style="margin: 0 8px;">TOO WET (&gt;85%)</span>
-            </p>
+            
+            <!-- UPDATED Status Indicators for new ranges -->
+            <div class="footer-status">
+                <span class="status-badge status-need-water-badge">NEED WATER (0-30%)</span>
+                <span class="status-badge status-ok-badge">OK (31-60%)</span>
+                <span class="status-badge status-moist-badge">MOIST (61-75%)</span>
+                <span class="status-badge status-too-wet-badge">TOO WET (76-100%)</span>
+                <span class="status-badge status-calibrating-badge">CALIBRATING</span>
+            </div>
+            
             <p style="margin-top: 15px; font-size: 1.1rem;">
-                <i class="fas fa-info-circle"></i> Data is updated from ESP32 every 10 seconds. Dashboard refreshes automatically.
+                <i class="fas fa-info-circle"></i> ESP32 sends data to Firebase every 60 seconds. Dashboard auto-refreshes.
+            </p>
+            <p style="margin-top: 10px; font-size: 1rem; opacity: 0.8;">
+                <i class="fas fa-microchip"></i> Device: ESP32 | Sensor: Capacitive Soil Moisture + DHT22
+            </p>
+            <p style="margin-top: 10px; font-size: 0.9rem; opacity: 0.6;">
+                <i class="fas fa-mouse-pointer"></i> Scroll past records table - header stays visible
             </p>
         </div>
     </div>
@@ -1216,6 +1294,26 @@
         setTimeout(function() {
             document.getElementById('loadingOverlay').classList.add('hidden');
         }, 3000);
+
+        // UPDATED: Function to determine status class based on new ranges
+        window.getStatusClass = function(percent, statusText) {
+            if (statusText && statusText.includes("LEARNING") || statusText.includes("CALIBRATING")) {
+                return 'status-calibrating';
+            }
+            
+            if (percent <= 30) return 'status-need-water';
+            if (percent <= 60) return 'status-ok';
+            if (percent <= 75) return 'status-moist';
+            return 'status-too-wet';
+        };
+
+        // UPDATED: Function to determine moisture level class based on new ranges
+        window.getMoistureLevelClass = function(percent) {
+            if (percent <= 30) return 'water-level-need-water';
+            if (percent <= 60) return 'water-level-ok';
+            if (percent <= 75) return 'water-level-moist';
+            return 'water-level-too-wet';
+        };
 
         // Global chart range function
         window.setChartRange = function(chartType, minutes) {
@@ -1237,20 +1335,47 @@
         // Placeholder functions for past records
         window.loadMorePastRecords = function() {
             console.log("Loading more past records...");
-            alert("This feature will be implemented in dashboard.js");
+            if (window.dashboard && window.dashboard.loadMorePastRecords) {
+                window.dashboard.loadMorePastRecords();
+            } else {
+                alert("This feature will be implemented in dashboard.js");
+            }
         };
 
         window.clearPastRecords = function() {
             if (confirm("Are you sure you want to clear all past records?")) {
                 console.log("Clearing past records...");
-                alert("This feature will be implemented in dashboard.js");
+                if (window.dashboard && window.dashboard.clearPastRecords) {
+                    window.dashboard.clearPastRecords();
+                } else {
+                    alert("This feature will be implemented in dashboard.js");
+                }
             }
         };
 
         window.exportAllRecords = function() {
             console.log("Exporting all records...");
-            alert("This feature will be implemented in dashboard.js");
+            if (window.dashboard && window.dashboard.exportAllRecords) {
+                window.dashboard.exportAllRecords();
+            } else {
+                alert("This feature will be implemented in dashboard.js");
+            }
         };
+
+        // Add scroll event to show shadow on sticky header
+        document.addEventListener('DOMContentLoaded', function() {
+            const pastRecordsContainer = document.querySelector('.past-records-container');
+            if (pastRecordsContainer) {
+                pastRecordsContainer.addEventListener('scroll', function() {
+                    const thead = this.querySelector('thead');
+                    if (this.scrollTop > 0) {
+                        thead.style.boxShadow = '0 3px 10px rgba(0,0,0,0.1)';
+                    } else {
+                        thead.style.boxShadow = 'none';
+                    }
+                });
+            }
+        });
     </script>
     <script src="dashboard.js"></script>
 </body>
