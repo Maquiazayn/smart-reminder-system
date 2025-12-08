@@ -1,3 +1,6 @@
+// dashboard.js - UPDATED FOR 60 SECONDS INTERVAL AND SIMPLIFIED STATUS
+// For Arduino ESP32 with device ID: smart-plant-reminder
+
 const FIREBASE_CONFIG = {
     databaseURL: "https://smart-plant-watering-e2811-default-rtdb.firebaseio.com"
 };
@@ -14,7 +17,7 @@ let moistureHistoryChart = null;
 let temperatureHistoryChart = null;
 let humidityHistoryChart = null;
 let countdownInterval = null;
-let currentCountdown = 60; // CHANGED FROM 10 TO 60
+let currentCountdown = 60; // 60 seconds interval
 let updateInterval = null;
 
 // Chart configurations
@@ -22,6 +25,14 @@ let chartRanges = {
     moisture: 10, // minutes
     temperature: 10,
     humidity: 10
+};
+
+// SIMPLIFIED STATUS RANGES (from your Arduino code)
+const MOISTURE_RANGES = {
+    NEED_WATER: 30,   // 0-30%: NEED TO WATER
+    OK: 50,           // 31-50%: OK
+    MOIST: 70,        // 51-70%: MOIST
+    // 71-100%: TOO WET
 };
 
 // ==================== INITIALIZATION ====================
@@ -39,8 +50,11 @@ function initializeDashboard() {
     updateElement('deviceId', currentDeviceId);
     updateElement('refreshDeviceId', currentDeviceId);
     
-    // Update interval info
-    updateElement('refreshCountdown', 'Next refresh in: 60 seconds');
+    // Update interval info - FIXED TO SHOW CORRECTLY
+    const countdownElement = document.getElementById('refreshCountdown');
+    if (countdownElement) {
+        countdownElement.innerHTML = 'Next refresh in: <span style="color: red; font-weight: bold;">60</span> seconds';
+    }
     
     // Hide loading
     setTimeout(() => {
@@ -61,7 +75,7 @@ function initializeDashboard() {
     // Load existing past records from localStorage
     loadPastRecordsFromStorage();
     
-    // Auto refresh every 60 seconds (1 minute) - CHANGED FROM 10 SECONDS
+    // Auto refresh every 60 seconds (1 minute)
     startAutoRefresh();
     
     // Countdown timer
@@ -69,6 +83,7 @@ function initializeDashboard() {
     
     console.log("✅ Dashboard initialized with past records system");
     console.log("🔄 Auto-refresh interval: 60 seconds");
+    console.log("📊 Simplified moisture ranges:", MOISTURE_RANGES);
 }
 
 // ==================== FIREBASE DATA FETCHING ====================
@@ -137,7 +152,7 @@ async function fetchHistoryData() {
                     moisture: parseFloat(dataPoint.moisture) || 0,
                     temperature: parseFloat(dataPoint.temperature) || 0,
                     humidity: parseFloat(dataPoint.humidity) || 0,
-                    status: dataPoint.status || "UNKNOWN"
+                    status: dataPoint.plant_status || dataPoint.status || "OK"
                 };
             });
             
@@ -161,15 +176,21 @@ async function fetchHistoryData() {
 }
 
 function processArduinoData(data) {
-    // Extract Arduino fields
-    let moisture = data.moisture !== undefined ? parseFloat(data.moisture) : 50;
+    // Extract Arduino fields - using the new simplified structure
+    let moisture = data.moisture_percent !== undefined ? parseFloat(data.moisture_percent) : 
+                  data.moisture !== undefined ? parseFloat(data.moisture) : 50;
+    
     let temperature = data.temperature !== undefined ? parseFloat(data.temperature) : 25.00;
     let humidity = data.humidity !== undefined ? parseFloat(data.humidity) : 50.00;
-    let rawValue = data.raw_value !== undefined ? parseInt(data.raw_value) : 2000;
-    let status = data.status || "UNKNOWN";
+    let rawValue = data.moisture_raw !== undefined ? parseInt(data.moisture_raw) : 
+                  data.raw_value !== undefined ? parseInt(data.raw_value) : 2000;
+    let status = data.plant_status || data.status || "OK";
     
-    // Clamp values
+    // Clamp moisture values
     moisture = Math.max(0, Math.min(100, moisture));
+    
+    // Get correct status based on simplified ranges
+    status = getMoistureStatus(moisture);
     
     const processedData = {
         moisture: moisture,
@@ -200,6 +221,19 @@ function processArduinoData(data) {
     updateAllCharts();
     
     showNotification("Data updated successfully", "success");
+}
+
+// Get moisture status based on simplified ranges
+function getMoistureStatus(moisture) {
+    if (moisture <= MOISTURE_RANGES.NEED_WATER) {
+        return "NEED TO WATER";
+    } else if (moisture <= MOISTURE_RANGES.OK) {
+        return "OK";
+    } else if (moisture <= MOISTURE_RANGES.MOIST) {
+        return "MOIST";
+    } else {
+        return "TOO WET";
+    }
 }
 
 function addToHistoryData(data) {
@@ -600,12 +634,19 @@ function getChartInstance(type) {
 function updateGauge(percentage) {
     if (!moistureGauge) return;
     
+    // Get color based on simplified ranges
     let gaugeColor;
-    if (percentage < 20) gaugeColor = '#ff6b6b';
-    else if (percentage < 35) gaugeColor = '#ffa94d';
-    else if (percentage < 65) gaugeColor = '#4CAF50';
-    else if (percentage < 85) gaugeColor = '#339af0';
-    else gaugeColor = '#228be6';
+    const status = getMoistureStatus(percentage);
+    
+    if (status === "NEED TO WATER") {
+        gaugeColor = '#ff6b6b';
+    } else if (status === "OK") {
+        gaugeColor = '#4CAF50';
+    } else if (status === "MOIST") {
+        gaugeColor = '#339af0';
+    } else { // TOO WET
+        gaugeColor = '#228be6';
+    }
     
     moistureGauge.data.datasets[0].data = [percentage, 100 - percentage];
     moistureGauge.data.datasets[0].backgroundColor = [gaugeColor, '#e9ecef'];
@@ -663,22 +704,21 @@ function updateRecordsTable() {
     let html = '';
     
     records.forEach(record => {
+        // Determine color classes based on simplified ranges
         let moistureClass = '';
         let statusClass = '';
+        const status = getMoistureStatus(record.moisture);
         
-        if (record.moisture < 20) {
+        if (status === "NEED TO WATER") {
             moistureClass = 'water-level-low';
             statusClass = 'status-need-water-badge';
-        } else if (record.moisture < 35) {
-            moistureClass = 'water-level-low';
-            statusClass = 'status-low-badge';
-        } else if (record.moisture < 65) {
+        } else if (status === "OK") {
             moistureClass = 'water-level-ok';
             statusClass = 'status-ok-badge';
-        } else if (record.moisture < 85) {
+        } else if (status === "MOIST") {
             moistureClass = 'water-level-moist';
             statusClass = 'status-moist-badge';
-        } else {
+        } else { // TOO WET
             moistureClass = 'water-level-high';
             statusClass = 'status-too-wet-badge';
         }
@@ -760,33 +800,29 @@ function updatePastRecordsTable() {
     let html = '';
     
     pastRecords.forEach(record => {
+        // Determine status based on simplified ranges
+        const status = getMoistureStatus(record.moisture);
         let statusClass = '';
         
-        if (record.status.includes("NEED WATER")) {
+        if (status === "NEED TO WATER") {
             statusClass = 'status-need-water-badge';
-        } else if (record.status.includes("LOW")) {
-            statusClass = 'status-low-badge';
-        } else if (record.status.includes("OK")) {
+        } else if (status === "OK") {
             statusClass = 'status-ok-badge';
-        } else if (record.status.includes("MOIST")) {
+        } else if (status === "MOIST") {
             statusClass = 'status-moist-badge';
-        } else if (record.status.includes("TOO WET")) {
+        } else { // TOO WET
             statusClass = 'status-too-wet-badge';
-        } else {
-            statusClass = '';
         }
         
         // Determine moisture color class
         let moistureClass = '';
-        if (record.moisture < 20) {
+        if (status === "NEED TO WATER") {
             moistureClass = 'water-level-low';
-        } else if (record.moisture < 35) {
-            moistureClass = 'water-level-low';
-        } else if (record.moisture < 65) {
+        } else if (status === "OK") {
             moistureClass = 'water-level-ok';
-        } else if (record.moisture < 85) {
+        } else if (status === "MOIST") {
             moistureClass = 'water-level-moist';
-        } else {
+        } else { // TOO WET
             moistureClass = 'water-level-high';
         }
         
@@ -880,10 +916,8 @@ function updateStatusColor(status) {
     statusEl.className = 'status-indicator';
     
     const statusUpper = status.toUpperCase();
-    if (statusUpper.includes("NEED WATER")) {
+    if (statusUpper.includes("NEED TO WATER")) {
         statusEl.classList.add('status-need-water');
-    } else if (statusUpper.includes("LOW")) {
-        statusEl.classList.add('status-low');
     } else if (statusUpper.includes("OK")) {
         statusEl.classList.add('status-ok');
     } else if (statusUpper.includes("MOIST")) {
@@ -902,11 +936,11 @@ function updateElement(id, value) {
     }
 }
 
-// ==================== TIMER FUNCTIONS (UPDATED TO 60 SECONDS) ====================
+// ==================== TIMER FUNCTIONS (60 SECONDS) ====================
 function startCountdownTimer() {
     if (countdownInterval) clearInterval(countdownInterval);
     
-    currentCountdown = 60; // CHANGED FROM 10 TO 60
+    currentCountdown = 60;
     updateCountdownDisplay();
     
     countdownInterval = setInterval(() => {
@@ -915,30 +949,42 @@ function startCountdownTimer() {
         
         if (currentCountdown <= 0) {
             fetchLiveData();
-            currentCountdown = 60; // CHANGED FROM 10 TO 60
+            currentCountdown = 60;
         }
     }, 1000);
 }
 
 function resetCountdown() {
-    currentCountdown = 60; // CHANGED FROM 10 TO 60
+    currentCountdown = 60;
     updateCountdownDisplay();
 }
 
 function updateCountdownDisplay() {
-    updateElement('countdownValue', currentCountdown);
-    updateElement('refreshCountdown', `Next refresh in: ${currentCountdown} seconds`);
-    
-    // Color coding for low countdown
-    const countdownEl = document.getElementById('countdownValue');
-    if (countdownEl) {
+    // Update the countdown value
+    const countdownValueEl = document.getElementById('countdownValue');
+    if (countdownValueEl) {
+        countdownValueEl.textContent = currentCountdown;
+        
+        // Color coding for low countdown
         if (currentCountdown <= 10) {
-            countdownEl.style.color = '#ff6b6b';
+            countdownValueEl.style.color = '#ff6b6b';
         } else if (currentCountdown <= 30) {
-            countdownEl.style.color = '#ffa94d';
+            countdownValueEl.style.color = '#ffa94d';
         } else {
-            countdownEl.style.color = '#667eea';
+            countdownValueEl.style.color = '#667eea';
         }
+    }
+    
+    // Update the refresh countdown text (RED TEXT)
+    const refreshCountdownEl = document.getElementById('refreshCountdown');
+    if (refreshCountdownEl) {
+        refreshCountdownEl.innerHTML = `Next refresh in: <span style="color: red; font-weight: bold;">${currentCountdown}</span> seconds`;
+    }
+    
+    // Also update loading overlay countdown
+    const loadingCountdownEl = document.getElementById('countdownTimer');
+    if (loadingCountdownEl) {
+        loadingCountdownEl.innerHTML = `Next refresh in: <span style="color: #fff;">${currentCountdown}</span> seconds`;
     }
 }
 
@@ -948,7 +994,7 @@ function startAutoRefresh() {
     updateInterval = setInterval(() => {
         console.log("🔄 Auto-refresh triggered");
         fetchLiveData();
-    }, 60000); // CHANGED FROM 10000 TO 60000 (1 MINUTE)
+    }, 60000); // 60 seconds (1 minute)
 }
 
 // ==================== EVENT LISTENERS ====================
@@ -1153,12 +1199,13 @@ function showNotification(message, type = 'info') {
 window.debug = {
     fetchData: fetchLiveData,
     showDemo: function() {
+        const moisture = Math.floor(Math.random() * 100);
         const demoData = {
-            moisture: Math.floor(Math.random() * 100),
+            moisture: moisture,
             temperature: 25.00 + (Math.random() * 5),
             humidity: 50.00 + (Math.random() * 20),
             rawValue: Math.floor(1500 + (Math.random() * 2000)),
-            status: "OK",
+            status: getMoistureStatus(moisture),
             deviceId: currentDeviceId
         };
         
@@ -1227,12 +1274,17 @@ window.debug = {
 };
 
 // ==================== STARTUP ====================
-console.log("🚀 Smart Plant Dashboard v4.0");
+console.log("🚀 Smart Plant Dashboard v4.0 - UPDATED");
 console.log("📊 Features: Single Big Chart Card + Past Records System");
 console.log("📱 Device ID:", currentDeviceId);
 console.log("🔄 Auto-refresh: 60 seconds (1 minute)");
 console.log("💾 Storage: Past records saved to localStorage");
 console.log("📅 Date Fix: Proper date handling for charts");
+console.log("🎯 Simplified Moisture Ranges:");
+console.log("   - 0-30%: NEED TO WATER");
+console.log("   - 31-50%: OK");
+console.log("   - 51-70%: MOIST");
+console.log("   - 71-100%: TOO WET");
 console.log("💡 Debug commands:");
 console.log("  - debug.fetchData()      - Manual refresh");
 console.log("  - debug.testFirebase()   - Test Firebase");
