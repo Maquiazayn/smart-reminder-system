@@ -11,7 +11,7 @@
             font-size: 16px;
             --scale-factor: 1;
         }
-        
+
         * {
             margin: 0;
             padding: 0;
@@ -22,6 +22,30 @@
             font-size: 16px;
             -webkit-text-size-adjust: 100%;
             -ms-text-size-adjust: 100%;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: url('plant1.jpg') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            padding: 30px;
+            font-size: 1rem;
+            transform-origin: 0 0;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        /* Add strong overlay for better text contrast */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: -1;
         }
 
         /* Fix table column alignment */
@@ -49,21 +73,23 @@
         /* Date and Time column styling */
         .date-col {
             font-weight: 600;
-            color: #2d3748;
+            color: #ffffff;
             white-space: nowrap;
             text-align: left !important;
             width: 15%;
             min-width: 120px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
         .timestamp-col {
             font-family: 'Courier New', monospace;
-            color: #2d3748;
+            color: #ffffff;
             font-weight: 600;
             white-space: nowrap;
             text-align: left !important;
             width: 12%;
             min-width: 100px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
         /* Moisture column - center aligned */
@@ -73,6 +99,8 @@
             font-size: 1.3rem;
             width: 12%;
             min-width: 110px;
+            color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
         /* Temperature and Humidity columns - center aligned */
@@ -83,6 +111,8 @@
             font-size: 1.3rem;
             width: 12%;
             min-width: 110px;
+            color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
         /* Status column - fixed width */
@@ -99,6 +129,8 @@
             font-weight: 700;
             width: 10%;
             min-width: 100px;
+            color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
         /* Ensure table headers match the data columns */
@@ -106,6 +138,7 @@
         .past-records-table th {
             text-align: center !important;
             vertical-align: middle !important;
+            color: #ffffff;
         }
 
         .records-table th:nth-child(1),
@@ -115,17 +148,7 @@
             text-align: left !important;
         }
 
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 30px;
-            font-size: 1rem;
-            transform-origin: 0 0;
-            transition: all 0.3s ease;
-        }
-
-        /* UPDATED Status Indicator Styles for new ranges */
+        /* HIGHLY VISIBLE Status Indicator Styles */
         .status-indicator {
             padding: 15px 30px;
             border-radius: 30px;
@@ -135,45 +158,49 @@
             letter-spacing: 1px;
             margin-top: 15px;
             display: inline-block;
+            backdrop-filter: blur(8px);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
         }
 
         .status-need-water {
-            background-color: #ff6b6b;
+            background-color: rgba(255, 107, 107, 0.85);
             color: white;
             animation: pulse 2s infinite;
         }
 
         .status-ok {
-            background-color: #4CAF50;
+            background-color: rgba(76, 175, 80, 0.85);
             color: white;
         }
 
         .status-moist {
-            background-color: #339af0;
+            background-color: rgba(51, 154, 240, 0.85);
             color: white;
         }
 
         .status-too-wet {
-            background-color: #228be6;
+            background-color: rgba(34, 139, 230, 0.85);
             color: white;
         }
 
         .status-unknown {
-            background-color: #718096;
+            background-color: rgba(113, 128, 150, 0.85);
             color: white;
         }
 
         .status-error {
-            background-color: #dc3545;
+            background-color: rgba(220, 53, 69, 0.85);
             color: white;
         }
 
         .status-calibrating {
-            background-color: #ffa94d;
+            background-color: rgba(255, 169, 77, 0.85);
             color: white;
         }
 
-        /* UPDATED Table Status Badges for new ranges */
+        /* HIGHLY VISIBLE Table Status Badges */
         .status-badge {
             display: inline-block;
             padding: 10px 20px;
@@ -183,66 +210,74 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             min-width: 120px;
+            backdrop-filter: blur(8px);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.25);
         }
 
         .status-need-water-badge {
-            background-color: #ff6b6b;
+            background-color: rgba(255, 107, 107, 0.85);
             color: white;
         }
 
         .status-ok-badge {
-            background-color: #4CAF50;
+            background-color: rgba(76, 175, 80, 0.85);
             color: white;
         }
 
         .status-moist-badge {
-            background-color: #339af0;
+            background-color: rgba(51, 154, 240, 0.85);
             color: white;
         }
 
         .status-too-wet-badge {
-            background-color: #228be6;
+            background-color: rgba(34, 139, 230, 0.85);
             color: white;
         }
 
         .status-calibrating-badge {
-            background-color: #ffa94d;
+            background-color: rgba(255, 169, 77, 0.85);
             color: white;
         }
 
-        /* UPDATED Moisture Level Colors in Table */
+        /* HIGHLY VISIBLE Moisture Level Colors in Table */
         .water-level-need-water {
-            color: #ff6b6b !important;
+            color: #ffcccc !important;
             font-weight: 700;
             font-size: 1.2rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
         .water-level-ok {
-            color: #4CAF50 !important;
+            color: #a8e6cf !important;
             font-weight: 700;
             font-size: 1.2rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
         .water-level-moist {
-            color: #339af0 !important;
+            color: #b3e0ff !important;
             font-weight: 700;
             font-size: 1.2rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
         .water-level-too-wet {
-            color: #228be6 !important;
+            color: #99ccff !important;
             font-weight: 700;
             font-size: 1.2rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
-        /* Loading Overlay */
+        /* Loading Overlay - Highly Visible */
         .loading-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: rgba(0, 0, 0, 0.8);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -251,6 +286,7 @@
             font-size: 2rem;
             flex-direction: column;
             transition: opacity 0.3s ease;
+            backdrop-filter: blur(10px);
         }
 
         .loading-overlay.hidden {
@@ -279,19 +315,21 @@
             100% { opacity: 1; }
         }
 
-        /* Table Styles */
+        /* HIGHLY VISIBLE Table Styles - TRANSPARENT BUT READABLE */
         .records-table {
             width: 100%;
             border-collapse: collapse;
-            background: white;
+            background: rgba(0, 0, 0, 0.45);
             border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
             font-size: 1.2rem;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
         }
 
         .records-table th {
-            background: #4a5568;
+            background: rgba(74, 85, 104, 0.85);
             color: white;
             padding: 25px 20px;
             text-align: left;
@@ -299,13 +337,16 @@
             font-size: 1.3rem;
             text-transform: uppercase;
             letter-spacing: 1px;
+            backdrop-filter: blur(5px);
+            border-bottom: 3px solid rgba(255, 255, 255, 0.2);
         }
 
         .records-table td {
             padding: 22px 20px;
-            border-bottom: 3px solid #e2e8f0;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.15);
             font-size: 1.2rem;
             font-weight: 500;
+            color: #ffffff;
         }
 
         .records-table tr:last-child td {
@@ -313,11 +354,11 @@
         }
 
         .records-table tr:nth-child(even) {
-            background-color: #f8fafc;
+            background-color: rgba(255, 255, 255, 0.1);
         }
 
         .records-table tr:hover {
-            background-color: #edf2f7;
+            background-color: rgba(255, 255, 255, 0.2);
         }
 
         .container {
@@ -325,11 +366,17 @@
             margin: 0 auto;
         }
 
+        /* HIGHLY VISIBLE Header - TRANSPARENT */
         .header {
             text-align: center;
             color: white;
             margin-bottom: 40px;
-            padding: 30px;
+            padding: 40px;
+            background: rgba(0, 0, 0, 0.55);
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
         }
 
         .header h1 {
@@ -339,11 +386,14 @@
             align-items: center;
             justify-content: center;
             gap: 20px;
+            text-shadow: 0 3px 6px rgba(0,0,0,0.6);
         }
 
         .header p {
             font-size: 1.4rem;
-            opacity: 0.9;
+            opacity: 0.95;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 15px;
         }
 
         .dashboard {
@@ -353,26 +403,35 @@
             margin-bottom: 40px;
         }
 
+        /* HIGHLY VISIBLE CARDS - TRANSPARENT BUT READABLE */
         .card {
-            background: rgba(255, 255, 255, 0.97);
+            background: rgba(0, 0, 0, 0.45);
             border-radius: 25px;
             padding: 40px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
-            transition: transform 0.3s ease;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            color: #ffffff;
         }
 
         .card:hover {
             transform: translateY(-8px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.5);
         }
 
-        /* BIG CHART CARD */
+        /* BIG CHART CARD - TRANSPARENT BUT READABLE */
         .big-chart-card {
             grid-column: 1 / -1;
             padding: 60px;
-            background: rgba(255, 255, 255, 0.97);
+            background: rgba(0, 0, 0, 0.45);
             border-radius: 25px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
             margin-bottom: 40px;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            color: #ffffff;
         }
 
         .card-title {
@@ -380,13 +439,16 @@
             align-items: center;
             gap: 15px;
             margin-bottom: 30px;
-            color: #333;
+            color: #ffffff;
             font-size: 2.2rem;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.6);
         }
 
         .card-title i {
-            color: #667eea;
+            color: #a8d0ff;
             font-size: 2.2rem;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
         }
 
         .moisture-level {
@@ -397,8 +459,9 @@
         .percentage {
             font-size: 6rem;
             font-weight: 700;
-            color: #667eea;
+            color: #a8d0ff;
             margin-bottom: 15px;
+            text-shadow: 0 3px 6px rgba(0,0,0,0.7);
         }
 
         .gauge-container {
@@ -406,7 +469,7 @@
             margin: 30px 0;
         }
 
-        /* CHART CONTAINER */
+        /* CHART CONTAINER - IMPROVED VISIBILITY */
         .chart-grid-container {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -417,12 +480,22 @@
         .chart-container {
             height: 500px;
             position: relative;
-            background: #f8f9fa;
+            background: rgba(0, 0, 0, 0.6);
             border-radius: 15px;
             padding: 25px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            backdrop-filter: blur(12px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
         }
 
+        /* Chart canvas styling for better visibility */
+        .chart-container canvas {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        /* HIGHLY VISIBLE Stats Grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -430,81 +503,118 @@
         }
 
         .stat-item {
-            background: #f8f9fa;
-            padding: 20px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 25px;
             border-radius: 20px;
             text-align: center;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            transition: transform 0.3s ease;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .stat-item:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
         }
 
         .stat-value {
             font-size: 2.5rem;
             font-weight: 700;
-            color: #667eea;
+            color: #a8d0ff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.6);
         }
 
         .stat-label {
             font-size: 1.1rem;
-            color: #666;
+            color: rgba(255, 255, 255, 0.9);
             margin-top: 8px;
+            font-weight: 500;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
         }
 
         .device-info {
             margin-top: 25px;
             padding-top: 25px;
-            border-top: 2px solid #eee;
+            border-top: 2px solid rgba(255, 255, 255, 0.2);
         }
 
         .device-id {
             font-family: monospace;
-            background: #f1f3f5;
-            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 12px 15px;
             border-radius: 8px;
             font-size: 1.1rem;
+            backdrop-filter: blur(8px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            display: inline-block;
+            font-weight: 600;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
         }
 
         .last-update {
-            color: #666;
+            color: rgba(255, 255, 255, 0.9);
             font-size: 1.1rem;
             margin-top: 15px;
-            padding: 15px;
-            background: #f8f9fa;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.15);
             border-radius: 12px;
             text-align: center;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            font-weight: 500;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
         }
 
+        /* HIGHLY VISIBLE Refresh Button */
         .refresh-btn {
             display: block;
             width: 100%;
             padding: 20px;
-            background: #667eea;
+            background: rgba(102, 126, 234, 0.9);
             color: white;
             border: none;
             border-radius: 20px;
             font-size: 1.3rem;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.3s ease;
+            transition: all 0.3s ease;
             margin-top: 30px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 15px;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
         .refresh-btn:hover {
-            background: #5a67d8;
+            background: rgba(90, 103, 216, 0.95);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.5);
         }
 
+        /* HIGHLY VISIBLE Footer */
         .footer {
             text-align: center;
             color: white;
             margin-top: 50px;
-            padding: 30px;
-            opacity: 0.9;
+            padding: 40px;
+            background: rgba(0, 0, 0, 0.55);
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
         }
 
         .footer p {
             font-size: 1.2rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 10px;
         }
 
         /* Recent Records Table Styles */
@@ -515,25 +625,26 @@
         .records-title {
             font-size: 2.2rem;
             font-weight: 700;
-            color: #2d3748;
+            color: #ffffff;
             margin-bottom: 30px;
             padding-bottom: 20px;
-            border-bottom: 4px solid #667eea;
+            border-bottom: 4px solid rgba(168, 208, 255, 0.7);
             text-align: center;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.6);
         }
 
-        /* PAST RECORDS SECTION */
+        /* HIGHLY VISIBLE PAST RECORDS SECTION */
         .past-records-title {
             font-size: 2.4rem;
             font-weight: 700;
-            color: #2d3748;
             margin-bottom: 35px;
             padding-bottom: 25px;
-            border-bottom: 5px solid #ff6b6b;
+            border-bottom: 5px solid rgba(255, 182, 182, 0.7);
             text-align: center;
-            background: linear-gradient(90deg, #667eea, #ff6b6b);
+            background: linear-gradient(90deg, rgba(168, 208, 255, 0.9), rgba(255, 182, 182, 0.9));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
         .table-header {
@@ -548,9 +659,10 @@
             gap: 15px;
         }
 
+        /* HIGHLY VISIBLE Action Buttons */
         .action-btn {
             padding: 15px 25px;
-            background: #667eea;
+            background: rgba(102, 126, 234, 0.9);
             color: white;
             border: none;
             border-radius: 10px;
@@ -561,32 +673,37 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
         .action-btn:hover {
-            background: #5a67d8;
+            background: rgba(90, 103, 216, 0.95);
             transform: translateY(-3px);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
         }
 
         .action-btn.secondary {
-            background: #718096;
+            background: rgba(113, 128, 150, 0.9);
         }
 
         .action-btn.secondary:hover {
-            background: #4a5568;
+            background: rgba(74, 85, 104, 0.95);
         }
 
         .data-count {
-            color: #718096;
+            color: rgba(255, 255, 255, 0.9);
             font-size: 1.2rem;
             margin-top: 20px;
             text-align: right;
             font-weight: 600;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
         }
 
         .interval-info {
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.2);
             padding: 15px 20px;
             border-radius: 15px;
             margin-top: 15px;
@@ -594,27 +711,34 @@
             font-size: 1.1rem;
             color: white;
             border: 2px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(15px);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
 
         .countdown-timer {
             font-size: 1.2rem;
             font-weight: 600;
-            color: #667eea;
+            color: #a8d0ff;
             margin-top: 8px;
-            padding: 8px 15px;
-            background: #f8f9fa;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.15);
             border-radius: 8px;
             display: inline-block;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
         }
 
         .refresh-countdown {
             font-size: 1.1rem;
-            color: red;
-            font-weight: 500;
+            color: #ffcccc;
+            font-weight: 600;
             margin-top: 8px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
         }
 
-        /* Chart controls */
+        /* HIGHLY VISIBLE Chart controls */
         .chart-controls {
             display: flex;
             gap: 15px;
@@ -624,53 +748,70 @@
 
         .chart-btn {
             padding: 12px 20px;
-            background: #e2e8f0;
+            background: rgba(255, 255, 255, 0.2);
             border: none;
             border-radius: 8px;
             font-size: 1.1rem;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
         }
 
         .chart-btn:hover {
-            background: #cbd5e0;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
 
         .chart-btn.active {
-            background: #667eea;
+            background: rgba(102, 126, 234, 0.9);
             color: white;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
         }
 
         .time-range {
             font-size: 1.1rem;
-            color: #718096;
+            color: rgba(255, 255, 255, 0.9);
             margin-top: 15px;
             text-align: right;
+            font-weight: 500;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
         }
 
-        /* Chart Title for individual charts */
+        /* Chart Title for individual charts - IMPROVED VISIBILITY */
         .chart-subtitle {
             font-size: 1.4rem;
             font-weight: 600;
-            color: #333;
+            color: #ffffff;
             margin-bottom: 20px;
             text-align: center;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
         }
 
-        /* UPDATED: PAST RECORDS CONTAINER with STICKY HEADER */
+        /* HIGHLY VISIBLE PAST RECORDS CONTAINER */
         .past-records-container {
             max-height: 800px;
             overflow-y: auto;
             margin-top: 25px;
             border-radius: 15px;
-            background: white;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background: rgba(0, 0, 0, 0.45);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
             position: relative;
+            backdrop-filter: blur(12px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
         }
 
         /* Sticky header for past records table */
@@ -687,7 +828,7 @@
         }
 
         .past-records-table th {
-            background: #4a5568;
+            background: rgba(74, 85, 104, 0.85);
             color: white;
             padding: 20px 15px;
             text-align: left;
@@ -695,7 +836,8 @@
             font-size: 1.2rem;
             text-transform: uppercase;
             letter-spacing: 1px;
-            border-bottom: 3px solid #2d3748;
+            border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
         }
 
         .past-records-table th:first-child {
@@ -708,9 +850,10 @@
 
         .past-records-table td {
             padding: 18px 15px;
-            border-bottom: 2px solid #e2e8f0;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.15);
             font-size: 1.1rem;
             font-weight: 500;
+            color: #ffffff;
         }
 
         .past-records-table tr:last-child td {
@@ -718,11 +861,11 @@
         }
 
         .past-records-table tr:nth-child(even) {
-            background-color: #f8fafc;
+            background-color: rgba(255, 255, 255, 0.1);
         }
 
         .past-records-table tr:hover {
-            background-color: #edf2f7;
+            background-color: rgba(255, 255, 255, 0.2);
         }
 
         /* Scrollbar styling for past records */
@@ -731,18 +874,18 @@
         }
 
         .past-records-container::-webkit-scrollbar-track {
-            background: #f1f1f1;
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 0 15px 15px 0;
         }
 
         .past-records-container::-webkit-scrollbar-thumb {
-            background: #667eea;
+            background: rgba(102, 126, 234, 0.7);
             border-radius: 6px;
-            border: 3px solid #f1f1f1;
+            border: 3px solid rgba(255, 255, 255, 0.1);
         }
 
         .past-records-container::-webkit-scrollbar-thumb:hover {
-            background: #5a67d8;
+            background: rgba(90, 103, 216, 0.8);
         }
 
         /* Consistent column widths for both tables */
@@ -802,11 +945,12 @@
         /* Date column specific style */
         .date-col {
             font-weight: 600;
-            color: #2d3748;
+            color: #ffffff;
             white-space: nowrap;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
         }
 
-        /* UPDATED Footer status indicators */
+        /* HIGHLY VISIBLE Footer status indicators */
         .footer-status {
             display: flex;
             justify-content: center;
@@ -828,8 +972,17 @@
             right: 0;
             bottom: -3px;
             height: 3px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.1), transparent);
+            background: linear-gradient(to bottom, rgba(0,0,0,0.3), transparent);
             pointer-events: none;
+        }
+
+        /* Section Separator */
+        .section-separator {
+            height: 3px;
+            background: linear-gradient(90deg, rgba(168, 208, 255, 0.5), rgba(255, 182, 182, 0.5));
+            margin: 40px 0;
+            border-radius: 2px;
+            backdrop-filter: blur(5px);
         }
 
         @media (max-width: 1400px) {
@@ -1032,7 +1185,7 @@
             
             /* Mobile optimization for past records table */
             .past-records-table {
-                min-width: 800px; /* Force horizontal scroll on mobile */
+                min-width: 800px;
             }
             
             .table-data-wrapper {
@@ -1105,7 +1258,7 @@
                 
                 <div class="device-info">
                     <p>Device ID: <span class="device-id" id="deviceId">smart-plant-reminder</span></p>
-                    <p style="margin-top: 10px; color: #666; font-size: 1rem;">
+                    <p style="margin-top: 10px; color: rgba(255, 255, 255, 0.9); font-size: 1rem; font-weight: 500;">
                         <i class="fas fa-info-circle"></i> Device sends data to Firebase every 60 seconds
                     </p>
                 </div>
@@ -1129,7 +1282,7 @@
                 <!-- Moisture History Chart -->
                 <div class="chart-container">
                     <div class="chart-subtitle">
-                        <i class="fas fa-tint" style="color: #667eea;"></i> Moisture History
+                        <i class="fas fa-tint" style="color: #a8d0ff;"></i> Moisture History
                     </div>
                     <canvas id="moistureHistoryChart"></canvas>
                 </div>
@@ -1137,7 +1290,7 @@
                 <!-- Temperature History Chart -->
                 <div class="chart-container">
                     <div class="chart-subtitle">
-                        <i class="fas fa-thermometer" style="color: #ff6b6b;"></i> Temperature History
+                        <i class="fas fa-thermometer" style="color: #ffcccc;"></i> Temperature History
                     </div>
                     <canvas id="temperatureHistoryChart"></canvas>
                 </div>
@@ -1145,7 +1298,7 @@
                 <!-- Humidity History Chart -->
                 <div class="chart-container">
                     <div class="chart-subtitle">
-                        <i class="fas fa-water" style="color: #4CAF50;"></i> Humidity History
+                        <i class="fas fa-water" style="color: #a8e6cf;"></i> Humidity History
                     </div>
                     <canvas id="humidityHistoryChart"></canvas>
                 </div>
@@ -1183,7 +1336,7 @@
                     <tbody id="recordsTableBody">
                         <!-- Records will be populated by JavaScript -->
                         <tr>
-                            <td colspan="6" style="text-align: center; padding: 50px; color: #718096;">
+                            <td colspan="6" style="text-align: center; padding: 50px; color: rgba(255, 255, 255, 0.8);">
                                 <i class="fas fa-spinner fa-spin" style="margin-right: 15px; font-size: 1.5rem;"></i>
                                 <span style="font-size: 1.3rem;">Loading plant records...</span>
                             </td>
@@ -1198,12 +1351,7 @@
         </div>
 
         <!-- Section Separator -->
-        <div style="
-            height: 2px;
-            background: linear-gradient(90deg, rgba(102, 126, 234, 0.3), rgba(255, 107, 107, 0.3));
-            margin: 40px 0;
-            border-radius: 1px;
-        "></div>
+        <div class="section-separator"></div>
 
         <!-- PAST RECORDS TABLE - PERMANENT SECTION WITH STICKY HEADER -->
         <div class="card" style="margin-top: 40px;">
@@ -1240,7 +1388,7 @@
                         <tbody id="pastRecordsTableBody">
                             <!-- Past records will be populated by JavaScript -->
                             <tr>
-                                <td colspan="7" style="text-align: center; padding: 40px; color: #718096;">
+                                <td colspan="7" style="text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.8);">
                                     <i class="fas fa-database" style="margin-right: 10px;"></i>
                                     Past records will appear here
                                 </td>
@@ -1276,10 +1424,10 @@
             <p style="margin-top: 15px; font-size: 1.1rem;">
                 <i class="fas fa-info-circle"></i> ESP32 sends data to Firebase every 60 seconds. Dashboard auto-refreshes.
             </p>
-            <p style="margin-top: 10px; font-size: 1rem; opacity: 0.8;">
+            <p style="margin-top: 10px; font-size: 1rem; opacity: 0.9;">
                 <i class="fas fa-microchip"></i> Device: ESP32 | Sensor: Capacitive Soil Moisture + DHT22
             </p>
-            <p style="margin-top: 10px; font-size: 0.9rem; opacity: 0.6;">
+            <p style="margin-top: 10px; font-size: 0.9rem; opacity: 0.8;">
                 <i class="fas fa-mouse-pointer"></i> Scroll past records table - header stays visible
             </p>
         </div>
@@ -1369,11 +1517,45 @@
                 pastRecordsContainer.addEventListener('scroll', function() {
                     const thead = this.querySelector('thead');
                     if (this.scrollTop > 0) {
-                        thead.style.boxShadow = '0 3px 10px rgba(0,0,0,0.1)';
+                        thead.style.boxShadow = '0 3px 10px rgba(0,0,0,0.3)';
                     } else {
                         thead.style.boxShadow = 'none';
                     }
                 });
+            }
+        });
+
+        // CHART STYLING - IMPROVED VISIBILITY
+        window.addEventListener('DOMContentLoaded', function() {
+            // Function to style charts for better visibility
+            function styleChartsForVisibility() {
+                // Chart.js global configuration for better visibility
+                Chart.defaults.color = '#ffffff';
+                Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.3)';
+                Chart.defaults.font.family = "'Poppins', sans-serif";
+                Chart.defaults.font.size = 14;
+                Chart.defaults.font.weight = '500';
+                
+                // Ensure chart containers have proper background
+                const chartContainers = document.querySelectorAll('.chart-container canvas');
+                chartContainers.forEach(canvas => {
+                    // Add subtle background to chart area
+                    canvas.style.background = 'rgba(255, 255, 255, 0.05)';
+                    canvas.style.borderRadius = '8px';
+                    canvas.style.padding = '10px';
+                });
+            }
+            
+            // Initialize chart styling
+            styleChartsForVisibility();
+            
+            // Apply styling when charts are updated
+            if (window.dashboard && window.dashboard.updateCharts) {
+                const originalUpdateCharts = window.dashboard.updateCharts;
+                window.dashboard.updateCharts = function(data) {
+                    originalUpdateCharts.call(this, data);
+                    setTimeout(styleChartsForVisibility, 100);
+                };
             }
         });
     </script>
