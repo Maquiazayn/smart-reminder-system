@@ -1,6 +1,3 @@
-// dashboard.js - UPDATED FOR 60 SECONDS INTERVAL AND SIMPLIFIED STATUS
-// For Arduino ESP32 with device ID: smart-plant-reminder
-
 const FIREBASE_CONFIG = {
     databaseURL: "https://smart-plant-watering-e2811-default-rtdb.firebaseio.com"
 };
@@ -37,7 +34,7 @@ const MOISTURE_RANGES = {
 
 // ==================== INITIALIZATION ====================
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("🌱 Dashboard loading with single chart card and past records...");
+    console.log("🌱 Dashboard loading with soil condition warning...");
     initializeDashboard();
 });
 
@@ -50,7 +47,7 @@ function initializeDashboard() {
     updateElement('deviceId', currentDeviceId);
     updateElement('refreshDeviceId', currentDeviceId);
     
-    // Update interval info - FIXED TO SHOW CORRECTLY
+    // Update interval info
     const countdownElement = document.getElementById('refreshCountdown');
     if (countdownElement) {
         countdownElement.innerHTML = 'Next refresh in: <span style="color: red; font-weight: bold;">60</span> seconds';
@@ -81,7 +78,12 @@ function initializeDashboard() {
     // Countdown timer
     startCountdownTimer();
     
-    console.log("✅ Dashboard initialized with past records system");
+    // Initialize soil condition display
+    setTimeout(() => {
+        updateSoilCondition('--', '--', '--', 'CONNECTING...');
+    }, 100);
+    
+    console.log("✅ Dashboard initialized with soil condition warning");
     console.log("🔄 Auto-refresh interval: 60 seconds");
     console.log("📊 Simplified moisture ranges:", MOISTURE_RANGES);
 }
@@ -163,7 +165,6 @@ async function fetchHistoryData() {
             allHistoryData = historyArray;
             
             console.log(`📊 History data loaded: ${historyArray.length} records`);
-            console.log("Sample timestamps:", historyArray.slice(0, 3).map(d => d.timestamp.toString()));
             
             // Update all charts
             updateAllCharts();
@@ -176,7 +177,7 @@ async function fetchHistoryData() {
 }
 
 function processArduinoData(data) {
-    // Extract Arduino fields - using the new simplified structure
+    // Extract Arduino fields
     let moisture = data.moisture_percent !== undefined ? parseFloat(data.moisture_percent) : 
                   data.moisture !== undefined ? parseFloat(data.moisture) : 50;
     
@@ -207,7 +208,7 @@ function processArduinoData(data) {
     // Update dashboard
     updateDashboard(processedData);
     
-    // Add to recent records (WITH DATE)
+    // Add to recent records
     addToRecords(processedData);
     
     // Add to past records (permanent)
@@ -219,6 +220,9 @@ function processArduinoData(data) {
     // Update charts
     updateGauge(moisture);
     updateAllCharts();
+    
+    // Update soil condition warning
+    updateSoilCondition(moisture, temperature, humidity, status);
     
     showNotification("Data updated successfully", "success");
 }
@@ -270,6 +274,110 @@ function addToHistoryData(data) {
     // Sort by timestamp to ensure proper order
     allHistoryData.sort((a, b) => a.timestamp - b.timestamp);
 }
+
+// ===== SOIL CONDITION WARNING FUNCTION =====
+function updateSoilCondition(moisturePercent, temperature, humidity, statusText) {
+    console.log("🌱 Updating soil condition:", { moisturePercent, temperature, humidity, statusText });
+    
+    const warningElement = document.getElementById('soilConditionWarning');
+    const titleElement = document.getElementById('soilConditionTitle');
+    const descriptionElement = document.getElementById('soilConditionDescription');
+    const adviceElement = document.getElementById('soilAdviceText');
+    const moistureValueElement = document.getElementById('soilMoistureValue');
+    const statusValueElement = document.getElementById('soilStatusValue');
+    const tempValueElement = document.getElementById('soilTempValue');
+    const humidityValueElement = document.getElementById('soilHumidityValue');
+    
+    if (!warningElement || !titleElement || !descriptionElement) {
+        console.error("❌ Soil condition elements not found");
+        return;
+    }
+    
+    // Handle string or numeric inputs
+    const moisture = (typeof moisturePercent === 'number' || moisturePercent === '--') ? moisturePercent : parseFloat(moisturePercent);
+    const temp = (typeof temperature === 'number' || temperature === '--') ? temperature : parseFloat(temperature);
+    const humid = (typeof humidity === 'number' || humidity === '--') ? humidity : parseFloat(humidity);
+    
+    // Update values (handle NaN or invalid values)
+    moistureValueElement.textContent = (moisture === '--' || isNaN(moisture)) ? 'ERR' : moisture.toFixed(1) + '%';
+    tempValueElement.textContent = (temp === '--' || isNaN(temp)) ? 'ERR' : temp.toFixed(2) + '°C';
+    humidityValueElement.textContent = (humid === '--' || isNaN(humid)) ? 'ERR' : humid.toFixed(2) + '%';
+    
+    // Determine condition
+    let condition = '';
+    let icon = '';
+    let warningClass = '';
+    let advice = '';
+    let description = '';
+    let statusValue = '';
+    
+    if (moisture === '--' || isNaN(moisture)) {
+        condition = 'CONNECTION ERROR';
+        icon = '🚨';
+        warningClass = '';
+        statusValue = 'ERR';
+        description = 'Cannot connect to plant sensor.';
+        advice = 'Check Firebase connection and device status.';
+        warningElement.style.animation = 'pulse-warning 1s infinite';
+    } else if (statusText && (statusText.includes("CALIBRATING") || statusText.includes("LEARNING"))) {
+        condition = 'CALIBRATING';
+        icon = '🔧';
+        warningClass = 'calibrating';
+        statusValue = 'CALIBRATING';
+        description = 'Sensor is calibrating. Wait for stable readings.';
+        advice = 'Sensor is calibrating. Wait for stable readings.';
+        warningElement.style.animation = 'pulse-warning 2s infinite';
+    } else if (moisture <= MOISTURE_RANGES.NEED_WATER) {
+        condition = 'NEEDS WATER URGENTLY!';
+        icon = '🚨';
+        warningClass = '';
+        statusValue = 'DRY';
+        description = 'Critical: Plant soil is extremely dry and requires immediate watering!';
+        advice = 'Soil is too dry! Water your plant immediately.';
+        warningElement.style.animation = 'pulse-warning 1.5s infinite';
+    } else if (moisture <= MOISTURE_RANGES.OK) {
+        condition = 'NORMAL';
+        icon = '✅';
+        warningClass = 'normal';
+        statusValue = 'NORMAL';
+        description = 'Optimal: Plant soil has perfect moisture content for healthy growth.';
+        advice = 'Soil moisture is at optimal level.';
+        warningElement.style.animation = 'none';
+    } else if (moisture <= MOISTURE_RANGES.MOIST) {
+        condition = 'MOIST';
+        icon = '💧';
+        warningClass = 'moist';
+        statusValue = 'MOIST';
+        description = 'Adequate: Plant soil is moist. Ideal for most plants.';
+        advice = 'Soil is moist. No watering needed.';
+        warningElement.style.animation = 'none';
+    } else {
+        condition = 'TOO WET';
+        icon = '⚠️';
+        warningClass = 'too-wet';
+        statusValue = 'WET';
+        description = 'Excessive: Plant soil is too wet. Risk of root rot.';
+        advice = 'Soil is too wet! Reduce watering.';
+        warningElement.style.animation = 'none';
+    }
+    
+    // Update status value
+    if (statusValueElement) {
+        statusValueElement.textContent = statusValue;
+    }
+    
+    // Update elements
+    titleElement.textContent = icon + ' SOIL CONDITION: ' + condition;
+    descriptionElement.textContent = description;
+    if (adviceElement) adviceElement.textContent = advice;
+    
+    // Update styling
+    warningElement.className = 'soil-condition-warning ' + warningClass;
+}
+
+// REMOVE these duplicate functions - they're causing conflicts:
+// function updateSoilConditionForNoData() { ... }
+// function updateSoilConditionForConnectionError() { ... }
 
 // ==================== CHARTS INITIALIZATION ====================
 function initializeGauge() {
@@ -451,7 +559,6 @@ function getChartOptions(title, unit, color) {
                             const date = new Date(label);
                             if (isNaN(date.getTime())) return label;
                             
-                            // Default format for initialization
                             return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                         } catch (e) {
                             return label;
@@ -710,7 +817,7 @@ function updateRecordsTable() {
         const status = getMoistureStatus(record.moisture);
         
         if (status === "NEED TO WATER") {
-            moistureClass = 'water-level-low';
+            moistureClass = 'water-level-need-water';
             statusClass = 'status-need-water-badge';
         } else if (status === "OK") {
             moistureClass = 'water-level-ok';
@@ -719,7 +826,7 @@ function updateRecordsTable() {
             moistureClass = 'water-level-moist';
             statusClass = 'status-moist-badge';
         } else { // TOO WET
-            moistureClass = 'water-level-high';
+            moistureClass = 'water-level-too-wet';
             statusClass = 'status-too-wet-badge';
         }
         
@@ -817,13 +924,13 @@ function updatePastRecordsTable() {
         // Determine moisture color class
         let moistureClass = '';
         if (status === "NEED TO WATER") {
-            moistureClass = 'water-level-low';
+            moistureClass = 'water-level-need-water';
         } else if (status === "OK") {
             moistureClass = 'water-level-ok';
         } else if (status === "MOIST") {
             moistureClass = 'water-level-moist';
         } else { // TOO WET
-            moistureClass = 'water-level-high';
+            moistureClass = 'water-level-too-wet';
         }
         
         html += `
@@ -975,7 +1082,7 @@ function updateCountdownDisplay() {
         }
     }
     
-    // Update the refresh countdown text (RED TEXT)
+    // Update the refresh countdown text
     const refreshCountdownEl = document.getElementById('refreshCountdown');
     if (refreshCountdownEl) {
         refreshCountdownEl.innerHTML = `Next refresh in: <span style="color: red; font-weight: bold;">${currentCountdown}</span> seconds`;
@@ -1111,6 +1218,9 @@ function showNoDataWarning() {
     const statusEl = document.getElementById('statusIndicator');
     if (statusEl) statusEl.className = 'status-indicator status-unknown';
     
+    // Update soil condition for no data
+    updateSoilCondition('--', '--', '--', 'NO DATA');
+    
     showNotification("No data received from Arduino", "warning");
 }
 
@@ -1123,6 +1233,9 @@ function showConnectionError() {
     
     const statusEl = document.getElementById('statusIndicator');
     if (statusEl) statusEl.className = 'status-indicator status-error';
+    
+    // Update soil condition for connection error
+    updateSoilCondition('ERR', 'ERR', 'ERR', 'CONNECTION ERROR');
     
     showNotification("Connection error. Retrying...", "error");
 }
@@ -1206,7 +1319,8 @@ window.debug = {
             humidity: 50.00 + (Math.random() * 20),
             rawValue: Math.floor(1500 + (Math.random() * 2000)),
             status: getMoistureStatus(moisture),
-            deviceId: currentDeviceId
+            deviceId: currentDeviceId,
+            timestamp: new Date()
         };
         
         processArduinoData(demoData);
@@ -1241,10 +1355,13 @@ window.debug = {
             updatePastRecordsTable();
             updateAllCharts();
             localStorage.removeItem(`plant_past_records_${currentDeviceId}`);
+            
+            // Reset soil condition display
+            updateSoilCondition('--', '--', '--', 'NO DATA');
+            
             showNotification("All data cleared", "info");
         }
     },
-    // Debug date function
     debugDates: function() {
         console.log("=== Date Debug Information ===");
         console.log("Current time:", new Date().toString());
@@ -1258,41 +1375,59 @@ window.debug = {
                     "Type:", typeof point.timestamp,
                     "Instanceof Date:", point.timestamp instanceof Date);
             });
-            
-            console.log("Last 5 timestamps:");
-            allHistoryData.slice(-5).forEach((point, i) => {
-                console.log(`[${i}]`, point.timestamp.toString(), 
-                    "Valid:", !isNaN(point.timestamp.getTime()));
-            });
         }
+    },
+    testSoilConditions: function() {
+        console.log("🧪 Testing soil condition warnings...");
         
-        // Check chart data
-        if (moistureHistoryChart) {
-            console.log("Moisture chart labels:", moistureHistoryChart.data.labels.slice(0, 5));
-        }
+        // Test different moisture levels
+        const testCases = [
+            { moisture: 15, expected: "NEED TO WATER" },
+            { moisture: 35, expected: "OK" },
+            { moisture: 55, expected: "MOIST" },
+            { moisture: 85, expected: "TOO WET" }
+        ];
+        
+        testCases.forEach((test, index) => {
+            setTimeout(() => {
+                const demoData = {
+                    moisture: test.moisture,
+                    temperature: 25.00,
+                    humidity: 50.00,
+                    rawValue: 2000,
+                    status: getMoistureStatus(test.moisture),
+                    deviceId: currentDeviceId,
+                    timestamp: new Date()
+                };
+                
+                processArduinoData(demoData);
+                console.log(`Test ${index + 1}: ${test.moisture}% -> ${test.expected}`);
+                showNotification(`Test: ${test.moisture}% = ${test.expected}`, "info");
+            }, index * 3000);
+        });
     }
 };
 
 // ==================== STARTUP ====================
-console.log("🚀 Smart Plant Dashboard v4.0 - UPDATED");
-console.log("📊 Features: Single Big Chart Card + Past Records System");
+console.log("🚀 Smart Plant Dashboard v5.0 - WITH SOIL CONDITION WARNING");
 console.log("📱 Device ID:", currentDeviceId);
 console.log("🔄 Auto-refresh: 60 seconds (1 minute)");
 console.log("💾 Storage: Past records saved to localStorage");
-console.log("📅 Date Fix: Proper date handling for charts");
 console.log("🎯 Simplified Moisture Ranges:");
 console.log("   - 0-30%: NEED TO WATER");
 console.log("   - 31-50%: OK");
 console.log("   - 51-70%: MOIST");
 console.log("   - 71-100%: TOO WET");
+console.log("⚠️ New Feature: Soil Condition Warning System");
 console.log("💡 Debug commands:");
-console.log("  - debug.fetchData()      - Manual refresh");
-console.log("  - debug.testFirebase()   - Test Firebase");
-console.log("  - debug.getData()        - View current data");
-console.log("  - debug.getRecords()     - View recent records");
-console.log("  - debug.getPastRecords() - View all past records");
-console.log("  - debug.clearAllData()   - Clear all data");
-console.log("  - debug.debugDates()     - Debug date issues");
+console.log("  - debug.fetchData()        - Manual refresh");
+console.log("  - debug.testFirebase()     - Test Firebase");
+console.log("  - debug.getData()          - View current data");
+console.log("  - debug.getRecords()       - View recent records");
+console.log("  - debug.getPastRecords()   - View all past records");
+console.log("  - debug.clearAllData()     - Clear all data");
+console.log("  - debug.debugDates()       - Debug date issues");
+console.log("  - debug.testSoilConditions() - Test soil warning system");
 
 // Initial state
 updateElement('statusIndicator', 'CONNECTING...');
