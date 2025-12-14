@@ -13,11 +13,10 @@
             --scale-factor: 1;
             --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             --primary-dark: #5a67d8;
-            --secondary-gradient: linear-gradient(135deg, #4CAF50 0%, #2e7d32 100%);
-            --danger-gradient: linear-gradient(135deg, #ff6b6b 0%, #e53935 100%);
-            --warning-gradient: linear-gradient(135deg, #ffa94d 0%, #ff8c00 100%);
-            --info-gradient: linear-gradient(135deg, #339af0 0%, #1e88e5 100%);
-            --success-gradient: linear-gradient(135deg, #51cf66 0%, #2b8a3e 100%);
+            --danger-gradient: linear-gradient(135deg, #ff6b6b 0%, #e53935 100%); /* RED */
+            --success-gradient: linear-gradient(135deg, #51cf66 0%, #2b8a3e 100%); /* GREEN */
+            --warning-gradient: linear-gradient(135deg, #ffa94d 0%, #ff8c00 100%); /* ORANGE */
+            --info-gradient: linear-gradient(135deg, #339af0 0%, #1e88e5 100%); /* BLUE */
             --card-bg: rgba(255, 255, 255, 0.98);
             --card-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
             --card-shadow-hover: 0 25px 60px rgba(0, 0, 0, 0.25);
@@ -63,6 +62,121 @@
             z-index: -1;
             pointer-events: none;
         }
+
+        /* ===== SOIL CONDITION WARNING SECTION ===== */
+        .soil-condition-warning {
+            background: linear-gradient(135deg, #ff8a00 0%, #ff5252 100%);
+            color: white;
+            padding: 25px 40px;
+            border-radius: var(--border-radius);
+            margin-bottom: 30px;
+            box-shadow: 0 15px 35px rgba(255, 107, 107, 0.3);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            animation: pulse-warning 2s infinite;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .soil-condition-warning::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #ff0000, #ff8a00, #ffff00);
+            z-index: 1;
+        }
+
+        .soil-condition-warning.normal {
+            background: linear-gradient(135deg, #51cf66 0%, #2b8a3e 100%); /* GREEN */
+            box-shadow: 0 15px 35px rgba(81, 207, 102, 0.3);
+            animation: none;
+        }
+
+        .soil-condition-warning.moist {
+            background: linear-gradient(135deg, #ffa94d 0%, #ff8c00 100%); /* ORANGE */
+            box-shadow: 0 15px 35px rgba(255, 169, 77, 0.3);
+            animation: none;
+        }
+
+        .soil-condition-warning.too-wet {
+            background: linear-gradient(135deg, #339af0 0%, #1e88e5 100%); /* BLUE */
+            box-shadow: 0 15px 35px rgba(51, 154, 240, 0.3);
+            animation: none;
+        }
+
+        .soil-condition-warning.calibrating {
+            background: linear-gradient(135deg, #ffa94d 0%, #ff8c00 100%);
+            box-shadow: 0 15px 35px rgba(255, 169, 77, 0.3);
+            animation: pulse-warning 2s infinite;
+        }
+
+        .soil-condition-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            font-size: 2.2rem;
+            font-weight: 700;
+        }
+
+        .soil-condition-title i {
+            font-size: 2.5rem;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+
+        .soil-condition-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .soil-condition-item {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 15px;
+            border-radius: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.2rem;
+        }
+
+        .soil-condition-label {
+            font-weight: 600;
+            opacity: 0.9;
+        }
+
+        .soil-condition-value {
+            font-weight: 700;
+            font-size: 1.4rem;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .soil-condition-advice {
+            margin-top: 15px;
+            font-size: 1.2rem;
+            opacity: 0.95;
+            font-weight: 500;
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            border-left: 4px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .soil-condition-advice i {
+            margin-right: 10px;
+        }
+
+        @keyframes pulse-warning {
+            0% { opacity: 1; box-shadow: 0 15px 35px rgba(255, 107, 107, 0.3); }
+            50% { opacity: 0.9; box-shadow: 0 15px 35px rgba(255, 107, 107, 0.5); }
+            100% { opacity: 1; box-shadow: 0 15px 35px rgba(255, 107, 107, 0.3); }
+        }
+        /* ===== END SOIL CONDITION WARNING SECTION ===== */
 
         /* Fix table column alignment - PRESERVED */
         .records-table td,
@@ -171,23 +285,23 @@
         }
 
         .status-need-water {
-            background: var(--danger-gradient);
+            background: var(--danger-gradient); /* RED */
             color: white;
             animation: pulse 2s infinite;
         }
 
         .status-ok {
-            background: var(--success-gradient);
+            background: var(--success-gradient); /* GREEN */
             color: white;
         }
 
         .status-moist {
-            background: var(--info-gradient);
+            background: var(--warning-gradient); /* ORANGE */
             color: white;
         }
 
         .status-too-wet {
-            background: linear-gradient(135deg, #228be6 0%, #1c7ed6 100%);
+            background: var(--info-gradient); /* BLUE */
             color: white;
         }
 
@@ -202,7 +316,7 @@
         }
 
         .status-calibrating {
-            background: var(--warning-gradient);
+            background: linear-gradient(135deg, #ffd43b 0%, #f08c00 100%);
             color: white;
         }
 
@@ -222,51 +336,51 @@
         }
 
         .status-need-water-badge {
-            background: var(--danger-gradient);
+            background: var(--danger-gradient); /* RED */
             color: white;
         }
 
         .status-ok-badge {
-            background: var(--success-gradient);
+            background: var(--success-gradient); /* GREEN */
             color: white;
         }
 
         .status-moist-badge {
-            background: var(--info-gradient);
+            background: var(--warning-gradient); /* ORANGE */
             color: white;
         }
 
         .status-too-wet-badge {
-            background: linear-gradient(135deg, #228be6 0%, #1c7ed6 100%);
+            background: var(--info-gradient); /* BLUE */
             color: white;
         }
 
         .status-calibrating-badge {
-            background: var(--warning-gradient);
+            background: linear-gradient(135deg, #ffd43b 0%, #f08c00 100%);
             color: white;
         }
 
         /* UPDATED Moisture Level Colors in Table */
         .water-level-need-water {
-            color: #ff6b6b !important;
+            color: #e53935 !important; /* RED */
             font-weight: 700;
             font-size: 1.2rem;
         }
 
         .water-level-ok {
-            color: #4CAF50 !important;
+            color: #2b8a3e !important; /* GREEN */
             font-weight: 700;
             font-size: 1.2rem;
         }
 
         .water-level-moist {
-            color: #339af0 !important;
+            color: #ff8c00 !important; /* ORANGE */
             font-weight: 700;
             font-size: 1.2rem;
         }
 
         .water-level-too-wet {
-            color: #228be6 !important;
+            color: #1e88e5 !important; /* BLUE */
             font-weight: 700;
             font-size: 1.2rem;
         }
@@ -383,7 +497,7 @@
         .header {
             text-align: center;
             color: white;
-            margin-bottom: 50px;
+            margin-bottom: 30px;
             padding: 40px;
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
@@ -423,7 +537,7 @@
         }
 
         .header h1 i {
-            background: var(--secondary-gradient);
+            background: var(--success-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
@@ -523,7 +637,11 @@
             left: 0;
             width: 100%;
             height: 8px;
-            background: linear-gradient(90deg, #667eea, #4CAF50, #ff6b6b);
+            background: linear-gradient(90deg, 
+                #ff6b6b,    /* RED - NEED WATER */
+                #51cf66,    /* GREEN - OK */
+                #ffa94d,    /* ORANGE - MOIST */
+                #339af0);   /* BLUE - TOO WET */
             border-radius: var(--border-radius) var(--border-radius) 0 0;
         }
 
@@ -773,7 +891,11 @@
             left: 0;
             width: 100%;
             height: 5px;
-            background: linear-gradient(90deg, #667eea, #4CAF50, #ff6b6b);
+            background: linear-gradient(90deg, 
+                #ff6b6b,    /* RED - NEED WATER */
+                #51cf66,    /* GREEN - OK */
+                #ffa94d,    /* ORANGE - MOIST */
+                #339af0);   /* BLUE - TOO WET */
             border-radius: var(--border-radius) var(--border-radius) 0 0;
         }
 
@@ -1113,9 +1235,10 @@
         .container > div[style*="background: linear-gradient"] {
             height: 3px;
             background: linear-gradient(90deg, 
-                rgba(102, 126, 234, 0.4), 
-                rgba(76, 175, 80, 0.4), 
-                rgba(255, 107, 107, 0.4)) !important;
+                rgba(255, 107, 107, 0.4),     /* RED - NEED WATER */
+                rgba(81, 207, 102, 0.4),      /* GREEN - OK */
+                rgba(255, 169, 77, 0.4),      /* ORANGE - MOIST */
+                rgba(51, 154, 240, 0.4)) !important; /* BLUE - TOO WET */
             margin: 50px 0 !important;
             border-radius: 3px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -1161,6 +1284,10 @@
             .past-records-table th:nth-child(7) {
                 width: 12%;
             }
+            
+            .soil-condition-details {
+                grid-template-columns: 1fr 1fr;
+            }
         }
 
         @media (max-width: 992px) {
@@ -1185,6 +1312,14 @@
             
             .past-records-container {
                 max-height: 600px;
+            }
+            
+            .soil-condition-title {
+                font-size: 1.8rem;
+            }
+            
+            .soil-condition-details {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -1261,6 +1396,23 @@
                 font-size: 1rem;
             }
             
+            .soil-condition-warning {
+                padding: 20px;
+            }
+            
+            .soil-condition-title {
+                font-size: 1.5rem;
+            }
+            
+            .soil-condition-item {
+                font-size: 1rem;
+                padding: 12px;
+            }
+            
+            .soil-condition-value {
+                font-size: 1.1rem;
+            }
+            
             /* Adjust column widths for mobile */
             .past-records-table th:nth-child(1) {
                 width: 18%;
@@ -1320,6 +1472,22 @@
                 max-height: 400px;
             }
             
+            .soil-condition-warning {
+                padding: 15px;
+            }
+            
+            .soil-condition-title {
+                font-size: 1.3rem;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .soil-condition-advice {
+                font-size: 1rem;
+                padding: 10px 15px;
+            }
+            
             /* Mobile optimization for past records table */
             .past-records-table {
                 min-width: 800px; /* Force horizontal scroll on mobile */
@@ -1353,6 +1521,39 @@
                 <div class="refresh-countdown" id="refreshCountdown">
                     Next Firebase update in: 60 seconds
                 </div>
+            </div>
+        </div>
+
+        <!-- ===== SOIL CONDITION WARNING SECTION ===== -->
+        <div class="soil-condition-warning" id="soilConditionWarning">
+            <div class="soil-condition-title">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span id="soilConditionTitle">⚠️ SOIL CONDITION: LOADING...</span>
+            </div>
+            <div id="soilConditionDescription">Checking plant soil moisture...</div>
+            
+            <div class="soil-condition-details">
+                <div class="soil-condition-item">
+                    <span class="soil-condition-label">Moisture Level:</span>
+                    <span class="soil-condition-value" id="soilMoistureValue">--%</span>
+                </div>
+                <div class="soil-condition-item">
+                    <span class="soil-condition-label">Soil Status:</span>
+                    <span class="soil-condition-value" id="soilStatusValue">--</span>
+                </div>
+                <div class="soil-condition-item">
+                    <span class="soil-condition-label">Temperature:</span>
+                    <span class="soil-condition-value" id="soilTempValue">--°C</span>
+                </div>
+                <div class="soil-condition-item">
+                    <span class="soil-condition-label">Humidity:</span>
+                    <span class="soil-condition-value" id="soilHumidityValue">--%</span>
+                </div>
+            </div>
+            
+            <div class="soil-condition-advice" id="soilConditionAdvice">
+                <i class="fas fa-info-circle"></i>
+                <span id="soilAdviceText">Monitoring soil conditions...</span>
             </div>
         </div>
 
@@ -1496,9 +1697,10 @@
         <div style="
             height: 3px;
             background: linear-gradient(90deg, 
-                rgba(102, 126, 234, 0.4), 
-                rgba(76, 175, 80, 0.4), 
-                rgba(255, 107, 107, 0.4));
+                rgba(255, 107, 107, 0.4),     /* RED - NEED WATER */
+                rgba(81, 207, 102, 0.4),      /* GREEN - OK */
+                rgba(255, 169, 77, 0.4),      /* ORANGE - MOIST */
+                rgba(51, 154, 240, 0.4));     /* BLUE - TOO WET */
             margin: 50px 0;
             border-radius: 3px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -1587,12 +1789,94 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Temporary inline script while loading
-        console.log("🌱 Enhanced Dashboard with Past Records loading...");
+        console.log("🌱 Enhanced Dashboard with Soil Condition Warning loading...");
         
         // Hide loading overlay after 3 seconds
         setTimeout(function() {
             document.getElementById('loadingOverlay').classList.add('hidden');
         }, 3000);
+
+        // Function to update soil condition warning
+        window.updateSoilCondition = function(moisturePercent, temperature, humidity, statusText) {
+            const warningElement = document.getElementById('soilConditionWarning');
+            const titleElement = document.getElementById('soilConditionTitle');
+            const descriptionElement = document.getElementById('soilConditionDescription');
+            const adviceElement = document.getElementById('soilAdviceText');
+            const moistureValueElement = document.getElementById('soilMoistureValue');
+            const statusValueElement = document.getElementById('soilStatusValue');
+            const tempValueElement = document.getElementById('soilTempValue');
+            const humidityValueElement = document.getElementById('soilHumidityValue');
+            
+            // Update values
+            moistureValueElement.textContent = moisturePercent + '%';
+            tempValueElement.textContent = temperature + '°C';
+            humidityValueElement.textContent = humidity + '%';
+            
+            // Determine soil condition
+            let condition = '';
+            let icon = '';
+            let warningClass = '';
+            let advice = '';
+            
+            if (statusText && statusText.includes("LEARNING") || statusText.includes("CALIBRATING")) {
+                condition = 'CALIBRATING';
+                icon = '🔧';
+                warningClass = 'calibrating';
+                statusValueElement.textContent = 'CALIBRATING';
+                advice = 'Sensor is calibrating. Wait for stable readings.';
+            } else if (moisturePercent <= 30) {
+                condition = 'NEEDS WATER URGENTLY!';
+                icon = '🚨';
+                warningClass = '';
+                statusValueElement.textContent = 'DRY';
+                advice = 'Soil is too dry! Water your plant immediately.';
+            } else if (moisturePercent <= 60) {
+                condition = 'NORMAL';
+                icon = '✅';
+                warningClass = 'normal';
+                statusValueElement.textContent = 'NORMAL';
+                advice = 'Soil moisture is at optimal level.';
+            } else if (moisturePercent <= 75) {
+                condition = 'MOIST';
+                icon = '💧';
+                warningClass = 'moist';
+                statusValueElement.textContent = 'MOIST';
+                advice = 'Soil is moist. No watering needed.';
+            } else {
+                condition = 'TOO WET';
+                icon = '⚠️';
+                warningClass = 'too-wet';
+                statusValueElement.textContent = 'WET';
+                advice = 'Soil is too wet! Reduce watering.';
+            }
+            
+            // Update warning section
+            titleElement.textContent = icon + ' SOIL CONDITION: ' + condition;
+            descriptionElement.textContent = getConditionDescription(moisturePercent, condition);
+            adviceElement.textContent = advice;
+            
+            // Update styling
+            warningElement.className = 'soil-condition-warning ' + warningClass;
+            
+            // Add pulsing animation for urgent conditions
+            if (moisturePercent <= 30) {
+                warningElement.style.animation = 'pulse-warning 1.5s infinite';
+            } else {
+                warningElement.style.animation = 'none';
+            }
+        };
+        
+        function getConditionDescription(percent, condition) {
+            if (percent <= 30) {
+                return 'Critical: Plant soil is extremely dry and requires immediate watering!';
+            } else if (percent <= 60) {
+                return 'Optimal: Plant soil has perfect moisture content for healthy growth.';
+            } else if (percent <= 75) {
+                return 'Adequate: Plant soil is moist. Ideal for most plants.';
+            } else {
+                return 'Excessive: Plant soil is too wet. Risk of root rot.';
+            }
+        }
 
         // UPDATED: Function to determine status class based on new ranges
         window.getStatusClass = function(percent, statusText) {
@@ -1674,6 +1958,9 @@
                     }
                 });
             }
+            
+            // Initialize soil condition with default values
+            updateSoilCondition('--', '--', '--', '');
         });
     </script>
     <script src="dashboard.js"></script>
